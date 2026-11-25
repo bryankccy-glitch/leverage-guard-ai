@@ -1,0 +1,19 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: leverage
+      POSTGRES_PASSWORD: leverage_local_dev
+      POSTGRES_DB: leverage
+    ports: ["54330:5432"]
+    volumes: [leverage_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leverage -d leverage"]
+      interval: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    ports: ["63800:6379"]
+volumes:
+  leverage_db: {}

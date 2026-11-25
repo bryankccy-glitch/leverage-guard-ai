@@ -1,0 +1,14 @@
+.env
+.env.local
+apps/api/.venv/
+apps/api/var/
+__pycache__/
+.pytest_cache/
+.hypothesis/
+node_modules/
+.next/
+.tmp/
+*.pyc
+.DS_Store
+apps/web/test-results/
+apps/web/playwright-report/

@@ -1,0 +1,77 @@
+{
+ "status": "RUN",
+ "generated_at": "2026-11-25T19:19:58.877406+00:00",
+ "financial_accuracy": {
+  "checks": 27,
+  "passed": 27,
+  "accuracy": 1.0,
+  "failures": [],
+  "latency_ms_p50": 0.35,
+  "latency_ms_max": 3.18
+ },
+ "legal_event_accuracy": {
+  "checks": 15,
+  "passed": 15,
+  "accuracy": 1.0,
+  "failures": []
+ },
+ "citation_accuracy": {
+  "citations": 30,
+  "validated": 30,
+  "accuracy": 1.0,
+  "failures": [],
+  "rules_without_official_source": [
+   "DT-SETTLEMENT-CYCLE@0.1.0",
+   "DT-FUNDING-GAP@0.1.0"
+  ]
+ },
+ "effective_version_accuracy": {
+  "checks": 4,
+  "passed": 4,
+  "accuracy": 1.0,
+  "cases": [
+   {
+    "date": "2027-12-31",
+    "expected": "0.0015",
+    "got": "0.0015"
+   },
+   {
+    "date": "2028-01-03",
+    "expected": "0.003",
+    "got": "0.003"
+   },
+   {
+    "date": "2017-04-28",
+    "expected": "0.0015",
+    "got": "0.0015"
+   },
+   {
+    "date": "2017-04-27",
+    "expected": "0.003",
+    "got": "0.003"
+   }
+  ]
+ },
+ "advice_guard": {
+  "request_detection": {
+   "tp": 6,
+   "fp": 0,
+   "tn": 6,
+   "fn": 0,
+   "recall": 1.0,
+   "false_positive_rate": 0.0
+  },
+  "output_review": {
+   "checks": 6,
+   "passed": 6,
+   "accuracy": 1.0
+  }
+ },
+ "not_evaluated": [
+  "LLM 白話說明清晰度與正確性（需人工審查）",
+  "契約條款擷取正確率（需人工標註的真實契約集）",
+  "Prompt Injection 抵抗（需 LLM 對抗測試）",
+  "使用者理解度（需使用者研究）"
+ ],
+ "reviewer": null
+}

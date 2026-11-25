@@ -1,0 +1,41 @@
+"""時間軸事件的名稱（中英）與可能的下一步。法律內容一律從規則資料取得，這裡不寫法律判斷。"""
+from __future__ import annotations
+
+EVENT_META: dict[str, dict] = {
+    "position_opened": {"zh": "建立融資部位", "en": "Margin position opened", "next": ["price_change"]},
+    "price_change": {"zh": "市場價格變動", "en": "Market price change", "next": ["maintenance_threshold_breach"]},
+    "maintenance_threshold_breach": {"zh": "維持率低於追繳門檻", "en": "Maintenance ratio below threshold",
+                                     "next": ["margin_call_notice"]},
+    "margin_call_notice": {"zh": "補繳通知（模擬）", "en": "Margin call notice (simulated)",
+                           "next": ["top_up_deadline"]},
+    "top_up_deadline": {"zh": "補繳期限", "en": "Top-up deadline",
+                        "next": ["margin_call_cleared", "collateral_disposal_condition", "disposal_deferred"]},
+    "top_up_paid": {"zh": "使用者補繳", "en": "User tops up", "next": ["margin_call_cleared"]},
+    "margin_call_cleared": {"zh": "追繳紀錄取消", "en": "Margin call cleared", "next": []},
+    "disposal_deferred": {"zh": "暫不處分（追繳未取消）", "en": "Disposal deferred (call not cleared)",
+                          "next": ["collateral_disposal_condition", "margin_call_cleared"]},
+    "collateral_disposal_condition": {"zh": "符合擔保品處分條件", "en": "Collateral disposal condition met",
+                                      "next": ["collateral_disposed"]},
+    "collateral_disposed": {"zh": "擔保品處分（模擬）", "en": "Collateral disposed (simulated)",
+                            "next": ["surplus_returned", "remaining_debt_notice"]},
+    "disposal_unfilled": {"zh": "處分連續未能全數成交", "en": "Disposal not fully filled",
+                          "next": ["remaining_debt_notice"]},
+    "surplus_returned": {"zh": "溢額發還", "en": "Surplus returned", "next": []},
+    "remaining_debt_notice": {"zh": "剩餘債務：通知補足", "en": "Remaining debt notice", "next": ["default_report"]},
+    "default_report": {"zh": "限期清償逾期：申報違約", "en": "Default reported after deadline",
+                       "next": ["dispute_available"]},
+    "dispute_available": {"zh": "金融消費爭議處理", "en": "Financial consumer dispute process", "next": []},
+    "trade_executed": {"zh": "建立當沖交易", "en": "Day trade executed", "next": ["offset_reported"]},
+    "offset_reported": {"zh": "券商申報沖銷", "en": "Broker reports offset",
+                        "next": ["normal_settlement_obligation", "forced_buy_in", "settlement_due"]},
+    "normal_settlement_obligation": {"zh": "未沖銷部分轉一般交割", "en": "Unmatched shares settle in full",
+                                     "next": ["settlement_due"]},
+    "forced_buy_in": {"zh": "借券與強制買回", "en": "Securities borrowed and forced buy-in",
+                      "next": ["buyin_cost_due"]},
+    "buyin_cost_due": {"zh": "強制買回費用清償期限", "en": "Buy-in cost payment due", "next": ["dispute_available"]},
+    "settlement_due": {"zh": "交割日", "en": "Settlement date", "next": ["funding_gap_estimated"]},
+    "funding_gap_estimated": {"zh": "估計交割資金不足", "en": "Estimated settlement funding gap",
+                              "next": ["dispute_available"]},
+}
+
+STATUSES = ("not_triggered", "potential", "triggered_in_simulation", "requires_confirmation", "resolved")

@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+/* LeverageGuard AI 設計系統
+   - 預設淺色；.dark 為深色
+   - Risk Color 與 Market Color 分開：台股紅漲綠跌，法律風險顏色不能借用漲跌色
+   - 圓角：按鈕／輸入 8px、卡片 12px、對話框 16px；膠囊（pill）用於搜尋與狀態 */
+:root {
+  --bg: #f5f7fa;
+  --bg-2: #eef2f6;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-muted: #f1f4f8;
+  --border: #dce3eb;
+  --text: #10243e;
+  --text-2: #475569;
+  --text-3: #5b6b80;
+  --brand-navy: #10243e;
+  --brand: #087f8c;
+  --brand-fg: #ffffff;
+  --brand-soft: #e3f3f4;
+  --blue: #2563eb;
+  --blue-soft: #e6eefe;
+  --risk-critical: #dc2626;
+  --risk-high: #ea580c;
+  --risk-warning: #b45309;
+  --risk-normal: #047857;
+  --risk-unknown: #64748b;
+  --critical-soft: #fdecec;
+  --high-soft: #fdf0e6;
+  --warning-soft: #fdf5e3;
+  --normal-soft: #e6f5ef;
+  --unknown-soft: #eef1f5;
+  --brand-ink: #066b76;
+  --blue-ink: #1d4ed8;
+  --critical-ink: #b91c1c;
+  --high-ink: #b4400a;
+  --warning-ink: #9a4a08;
+  --normal-ink: #036b4c;
+  --unknown-ink: #4f5d70;
+  /* 台股：紅漲、綠跌（只用於價格方向） */
+  --market-up: #d6293b;
+  --market-down: #138a52;
+  --hero-card: #10243e;
+  --hero-card-fg: #ffffff;
+  --shadow: 0 1px 2px rgba(16, 36, 62, 0.06), 0 4px 16px rgba(16, 36, 62, 0.05);
+  --chart-1: #087f8c;
+  --chart-2: #2563eb;
+  --chart-3: #7aa7f7;
+  --chart-grid: #e5eaf0;
+}
+
+.dark {
+  --bg: #0b1220;
+  --bg-2: #101b2d;
+  --surface: #142136;
+  --surface-2: #1b2b42;
+  --surface-muted: #101b2d;
+  --border: #29394f;
+  --text: #f1f5f9;
+  --text-2: #cbd5e1;
+  --text-3: #94a3b8;
+  --brand: #2dd4bf;
+  --brand-fg: #062a2c;
+  --brand-soft: rgba(45, 212, 191, 0.14);
+  --blue: #60a5fa;
+  --blue-soft: rgba(96, 165, 250, 0.16);
+  --risk-critical: #f87171;
+  --risk-high: #fb923c;
+  --risk-warning: #fbbf24;
+  --risk-normal: #34d399;
+  --risk-unknown: #94a3b8;
+  --critical-soft: rgba(248, 113, 113, 0.14);
+  --high-soft: rgba(251, 146, 60, 0.14);
+  --warning-soft: rgba(251, 191, 36, 0.13);
+  --normal-soft: rgba(52, 211, 153, 0.13);
+  --unknown-soft: rgba(148, 163, 184, 0.14);
+  --brand-ink: #2dd4bf;
+  --blue-ink: #93c5fd;
+  --critical-ink: #fca5a5;
+  --high-ink: #fdba74;
+  --warning-ink: #fcd34d;
+  --normal-ink: #6ee7b7;
+  --unknown-ink: #cbd5e1;
+  --market-up: #f87171;
+  --market-down: #4ade80;
+  --hero-card: #2dd4bf;
+  --hero-card-fg: #062a2c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --chart-1: #2dd4bf;
+  --chart-2: #60a5fa;
+  --chart-3: #93c5fd;
+  --chart-grid: #22324a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-navy: var(--brand-navy);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-critical: var(--risk-critical);
+  --color-high: var(--risk-high);
+  --color-warning: var(--risk-warning);
+  --color-normal: var(--risk-normal);
+  --color-unknown: var(--risk-unknown);
+  --color-critical-soft: var(--critical-soft);
+  --color-high-soft: var(--high-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-normal-soft: var(--normal-soft);
+  --color-unknown-soft: var(--unknown-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-blue-ink: var(--blue-ink);
+  --color-critical-ink: var(--critical-ink);
+  --color-high-ink: var(--high-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-normal-ink: var(--normal-ink);
+  --color-unknown-ink: var(--unknown-ink);
+  --color-up: var(--market-up);
+  --color-down: var(--market-down);
+  --color-hero: var(--hero-card);
+  --color-hero-fg: var(--hero-card-fg);
+  --font-sans: var(--font-geist-sans), var(--font-noto-tc), "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-btn: 8px;
+  --radius-card: 12px;
+  --radius-modal: 16px;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.shadow-card {
+  box-shadow: var(--shadow);
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-muted), var(--border), var(--surface-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.react-flow__attribution {
+  display: none;
+}
