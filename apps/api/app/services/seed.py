@@ -88,13 +88,18 @@ def seed_rules() -> int:
             exists = one(conn, "select id from legal_rule_versions where rule_id = :r and version = :v",
                          r=rule["id"], v=rv.version)
             if exists:
+                # 明確被新版取代的待審查版本同步停用，避免資料庫舊狀態覆蓋檔案狀態。
+                if rv.review_status == "superseded":
+                    conn.execute(text("""update legal_rule_versions set review_status = 'superseded'
+                                         where id = :i and review_status in ('pending_review', 'draft')"""),
+                                 {"i": exists["id"]})
                 continue
             ver = one(conn, """
                 insert into legal_rule_versions (rule_id, version, rule_definition, effective_from, effective_to,
                   review_status, citation_validated, is_demo)
-                values (:r, :v, cast(:d as jsonb), :f, :t, 'pending_review', :c, :demo) returning id""",
+                values (:r, :v, cast(:d as jsonb), :f, :t, :status, :c, :demo) returning id""",
                       r=rule["id"], v=rv.version, d=json.dumps(rv.raw, ensure_ascii=False), f=rv.effective_from,
-                      t=rv.effective_to, c=rv.citation_ok or not rv.raw.get("sources"), demo=rv.is_demo)
+                      t=rv.effective_to, status=rv.review_status, c=rv.citation_ok or not rv.raw.get("sources"), demo=rv.is_demo)
             for tc in rv.raw.get("test_cases") or []:
                 conn.execute(text("""insert into rule_test_cases (rule_version_id, input_parameters, expected_result)
                                      values (:v, cast(:i as jsonb), cast(:e as jsonb))"""),

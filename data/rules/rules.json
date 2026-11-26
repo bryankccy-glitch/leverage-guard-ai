@@ -279,7 +279,7 @@
       "required_facts": ["trade_date"], "exceptions": [],
       "plain_language": "一般認知的交割日是成交日後第二個營業日（T+2）。本系統尚未匯入證交所營業細則原文，這個期限屬於待查證資訊。",
       "investor_obligations": ["於交割日前備妥款項"], "investor_rights": [], "broker_obligations": [], "broker_rights": [],
-      "required_evidence": ["對帳單上的交割日"], "is_demo": true
+      "required_evidence": ["對帳單上的交割日"], "is_demo": true, "review_status": "superseded"
     },
     {
       "rule_id": "DT-FUNDING-GAP", "version": "0.1.0", "rule_type": "event_condition",
@@ -289,7 +289,7 @@
       "event": "funding_gap_estimated", "required_facts": ["funding_gap"], "exceptions": [],
       "plain_language": "估計交割日前可用資金不夠。這只是預估：交割日前補足就沒有問題；交割日未履行時，是否構成違約交割與後續處理，依證交所規定與券商受託契約，本系統尚未匯入相關原文。",
       "investor_obligations": ["交割日前補足款項"], "investor_rights": [], "broker_obligations": [], "broker_rights": [],
-      "required_evidence": ["銀行交割帳戶餘額"], "is_demo": true
+      "required_evidence": ["銀行交割帳戶餘額"], "is_demo": true, "review_status": "superseded"
     },
     {
       "rule_id": "GENERAL-DISPUTE", "version": "1.0.0", "rule_type": "procedure",
@@ -313,6 +313,98 @@
       "event": "maintenance_threshold_breach", "required_facts": ["maintenance_ratio"], "exceptions": [],
       "plain_language": "這是虛構的法規變動示範，用來展示規則版本差異與重新計算。現行規定仍是 130%。",
       "is_demo": true
+    },
+    {
+      "rule_id": "DT-SETTLEMENT-CYCLE",
+      "version": "1.0.0",
+      "rule_type": "deadline",
+      "rule_name": "普通交割期限（T+2）",
+      "jurisdiction": "TW",
+      "market": "TWSE/TPEx",
+      "trading_type": "day_trading",
+      "effective_from": null,
+      "effective_to": null,
+      "sources": [
+        {
+          "source_key": "twse:FL007304",
+          "article_number": "第57條",
+          "quote": "普通交割之買賣於成交日後第二營業日辦理交割。"
+        }
+      ],
+      "parameters": {
+        "settlement_business_days": "2"
+      },
+      "condition": null,
+      "event": "settlement_due",
+      "required_facts": [
+        "trade_date"
+      ],
+      "exceptions": [],
+      "plain_language": "依證交所營業細則第57條，普通交割於成交日後第二營業日（T+2）辦理；應於交割期限前備妥應付款項。實際交割日與收款時間請核對券商通知。",
+      "investor_obligations": [
+        "於交割日前備妥款項"
+      ],
+      "investor_rights": [],
+      "broker_obligations": [],
+      "broker_rights": [],
+      "required_evidence": [
+        "對帳單上的交割日"
+      ],
+      "is_demo": false,
+      "review_status": "pending_review"
+    },
+    {
+      "rule_id": "DT-FUNDING-GAP",
+      "version": "1.0.0",
+      "rule_type": "event_condition",
+      "rule_name": "交割資金不足（估計）",
+      "jurisdiction": "TW",
+      "market": "TWSE/TPEx",
+      "trading_type": "day_trading",
+      "effective_from": null,
+      "effective_to": null,
+      "sources": [
+        {
+          "source_key": "twse:FL007304",
+          "article_number": "第91條",
+          "quote": "委託人不如期履行交割義務，即為違約，證券經紀商應依本公司「證券經紀商申報委託人遲延交割及違約案件處理作業要點」規定申報違約，並同時通知委託人。"
+        },
+        {
+          "source_key": "twse:FL007304",
+          "article_number": "第91條",
+          "quote": "證券經紀商依第一項、第二項規定承受之證券或價款，至遲應於委託人違約之次一營業日，在本公司市場委託他證券經紀商予以處理；處理後應即依「證券經紀商申報委託人遲延交割及違約案件處理作業要點」規定辦理申報並通知委託人。"
+        },
+        {
+          "source_key": "twse:FL007304",
+          "article_number": "第82條",
+          "quote": "證券經紀商接受普通交割之買賣委託，於成交後應依「受託契約準則」第十二條規定，收取買進應付價款、賣出之有價證券或依「有價證券當日沖銷交易作業辦法」收取買賣沖銷後之差價。"
+        }
+      ],
+      "parameters": {},
+      "condition": {
+        "op": "gt",
+        "field": "funding_gap",
+        "value": "0"
+      },
+      "event": "funding_gap_estimated",
+      "required_facts": [
+        "funding_gap"
+      ],
+      "exceptions": [
+        "第91條另有同帳戶同種類同數量證券抵繳、大量違約證券處理及不可歸責於券商的例外，須依實際事實確認"
+      ],
+      "plain_language": "這是預估交割資金缺口，於交割日（T+2）前補足即可。不如期履行交割義務即構成違約，券商須申報並通知委託人，承受的款券至遲於違約次一營業日在市場委託其他券商處理。沖銷後依第82條收取差價；違約金與受託契約條款依各券商契約，系統不臆測金額。",
+      "investor_obligations": [
+        "交割日前補足款項"
+      ],
+      "investor_rights": [],
+      "broker_obligations": [],
+      "broker_rights": [],
+      "required_evidence": [
+        "銀行交割帳戶餘額"
+      ],
+      "is_demo": false,
+      "review_status": "pending_review"
     }
   ]
 }

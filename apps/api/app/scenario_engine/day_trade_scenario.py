@@ -88,6 +88,14 @@ def run_day_trade_scenario(s: DayTradeScenarioInput) -> dict[str, Any]:
         tl.add(3, settle.date, "funding_gap_estimated", "requires_confirmation",
                "估計交割應付款大於可用交割資金", ["DT-FUNDING-GAP"], {"估計資金缺口": m["funding_gap"].value},
                uncertainty=["這是預估資金缺口，不是違約。交割日前補足即可；是否構成違約交割，以券商確認為準"])
+        tl.add(4, settle.date, "settlement_default", "potential",
+               "若交割期限屆至仍未履行交割義務，券商須申報違約並通知委託人", ["DT-FUNDING-GAP"],
+               uncertainty=["僅為未如期交割的條件式風險，預估缺口不代表已違約"])
+        disposal = add_trading_days(settle.date, 1)
+        tl.add(5, disposal.date, "settlement_default_disposal", "potential",
+               "若交割日違約，券商承受的款券至遲於次一營業日在市場委託其他券商處理", ["DT-FUNDING-GAP"],
+               deadline=disposal.date, deadline_note=disposal.note,
+               uncertainty=["僅為未如期交割的條件式風險，預估缺口不代表已違約"])
     general_rules = select_rules("general", s.trade_date, status_overrides=s.status_overrides).rules
     tl.rules.update(general_rules)
     tl.add(4, None, "dispute_available", "potential", "對處理結果有疑義時", ["GENERAL-DISPUTE"])
@@ -103,7 +111,7 @@ def run_day_trade_scenario(s: DayTradeScenarioInput) -> dict[str, Any]:
         "rule_evaluation": serialize(ev.__dict__),
         "timeline": tl.to_list(),
         "assumptions": result.assumptions + [
-            "交割日依 T+2 估算（尚未匯入證交所營業細則原文，屬待查證資訊）"],
+            "交割日依證交所營業細則第57條按 T+2 推算，實際收款時間依券商通知"],
         "warnings": serialize(warnings),
         "is_simulation": True,
     }

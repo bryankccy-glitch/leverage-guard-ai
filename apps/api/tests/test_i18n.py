@@ -98,6 +98,8 @@ DAY = {"asset_label": "Demo", "direction": "sell_first", "buy_price": "100", "bu
 @pytest.mark.parametrize(("method", "path", "body"), [
     ("post", "/api/v1/calculate/margin", MARGIN_CALC),
     ("post", "/api/v1/calculate/day-trading", DAY),
+    ("post", "/api/v1/calculate/day-trading", {**DAY, "direction": "buy_first",
+                                               "buy_quantity": "3000", "available_cash": "0"}),
     ("post", "/api/v1/calculate/scenario", {**MARGIN, "asset_label": "Demo",
                                              "steps": [{"day": 0, "price": "100"}, {"day": 1, "price": "70"},
                                                        {"day": 4, "price": "45"}]}),

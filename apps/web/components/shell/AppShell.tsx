@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity, Bell, BookOpenText, ChevronDown, ChevronRight, FileSearch, FileText, FlaskConical, History, Languages,
   LayoutGrid, LifeBuoy, LogIn, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Radar, Scale, Search, Settings, ShieldCheck,
-  Sun, Timer, TrendingDown, Users, X,
+  Sun, Timer, TrendingDown, Users, X, Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -80,6 +80,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
       items: [
         { href: "/dashboard", key: "nav.dashboard", icon: <LayoutGrid size={18} /> },
         { href: "/simulator/margin", key: "nav.margin", icon: <TrendingDown size={18} /> },
+        { href: "/simulator/day-trading", key: "nav.dayTrading", icon: <Zap size={18} /> },
         { href: "/scenarios", key: "nav.lab", icon: <FlaskConical size={18} /> },
       ],
     },

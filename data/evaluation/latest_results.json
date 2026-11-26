@@ -1,13 +1,13 @@
 {
  "status": "RUN",
- "generated_at": "2026-11-25T19:19:58.877406+00:00",
+ "generated_at": "2026-11-26T13:30:21.257303+00:00",
  "financial_accuracy": {
   "checks": 27,
   "passed": 27,
   "accuracy": 1.0,
   "failures": [],
-  "latency_ms_p50": 0.35,
-  "latency_ms_max": 3.18
+  "latency_ms_p50": 0.27,
+  "latency_ms_max": 3.04
  },
  "legal_event_accuracy": {
   "checks": 15,
@@ -16,14 +16,11 @@
   "failures": []
  },
  "citation_accuracy": {
-  "citations": 30,
-  "validated": 30,
+  "citations": 34,
+  "validated": 34,
   "accuracy": 1.0,
   "failures": [],
-  "rules_without_official_source": [
-   "DT-SETTLEMENT-CYCLE@0.1.0",
-   "DT-FUNDING-GAP@0.1.0"
-  ]
+  "rules_without_official_source": []
  },
  "effective_version_accuracy": {
   "checks": 4,

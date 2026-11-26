@@ -75,7 +75,9 @@ def legal_events() -> dict:
 def citations() -> dict:
     cits = [c for rv in all_rule_versions() for c in rv.citations]
     bad = [f"{c.source_key} {c.article_number}" for c in cits if not c.validated]
-    unsourced = [rv.key for rv in all_rule_versions() if not rv.raw.get("sources")]
+    # 已被新版取代的版本不會再被選用，不列入「缺官方出處」
+    unsourced = [rv.key for rv in all_rule_versions()
+                 if not rv.raw.get("sources") and rv.review_status != "superseded"]
     return {"citations": len(cits), "validated": len(cits) - len(bad), "accuracy": round((len(cits) - len(bad)) / len(cits), 4),
             "failures": bad, "rules_without_official_source": unsourced}
 

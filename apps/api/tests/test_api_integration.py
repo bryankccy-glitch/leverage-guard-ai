@@ -151,3 +151,32 @@ def test_report_from_completed_run(monkeypatch):
     notes = client.get("/api/v1/notifications", headers=h).json()["items"]
     assert any(n["notification_type"] == "report_generated" for n in notes)
     client.delete(f"/api/v1/simulations/{sid}", headers=h)
+
+
+def test_seed_day_trade_versions_and_saved_timeline():
+    from datetime import date
+
+    from app.legal_rules.engine import select_rules
+    from app.services.rule_status import status_overrides
+    from app.services.seed import seed_rules
+
+    seed_rules()
+    assert seed_rules() == 0
+    sel = select_rules("day_trading", date(2026, 12, 2), status_overrides=status_overrides(ttl=0))
+    for rid in ("DT-SETTLEMENT-CYCLE", "DT-FUNDING-GAP"):
+        assert sel.rules[rid].version == "1.0.0" and sel.rules[rid].citation_ok
+    body = {"scenario_name": "Day-trade legal evidence", "scenario_type": "day_trading", "input_parameters": {
+        "direction": "buy_first", "buy_price": "100", "buy_quantity": "1000", "sell_price": "100",
+        "sell_quantity": "0", "trade_date": "2026-12-02", "available_cash": "0"}}
+    h = login(INV)
+    created = client.post("/api/v1/simulations", headers=h, json=body)
+    assert created.status_code == 201, created.text
+    r = client.get(f"/api/v1/simulations/{created.json()['id']}/timeline", headers=h)
+    assert r.status_code == 200
+    nodes = {n["event_type"]: n for n in r.json()["timeline"]}
+    assert nodes["settlement_due"]["legal_basis"][0]["article_number"] == "第57條"
+    assert nodes["settlement_default_disposal"]["deadline"] == "2026-12-07"
+    assert {c["article_number"] for c in nodes["funding_gap_estimated"]["legal_basis"]} == {"第82條", "第91條"}
+    assert all(not n["unverified"] for n in nodes.values())
+    with engine().begin() as conn:
+        conn.execute(text("delete from simulation_scenarios where id = :i"), {"i": created.json()["id"]})

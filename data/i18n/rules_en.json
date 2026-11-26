@@ -94,12 +94,12 @@
    "plain": "If your cumulative day trading losses last month reached half of your limit, the broker must suspend your day trading eligibility."
   },
   "DT-SETTLEMENT-CYCLE": {
-   "name": "Regular settlement cycle (T+2, source text not yet imported)",
-   "plain": "Settlement is commonly understood to be the second business day after the trade date (T+2). The TWSE Operating Rules text has not been imported yet, so this deadline is unverified."
+   "name": "Regular settlement cycle (T+2)",
+   "plain": "Under Article 57 of the TWSE Operating Rules, regular settlement takes place on the second business day after the trade date (T+2). Have the payable funds ready before the deadline and check the settlement date and payment cutoff with your broker."
   },
   "DT-FUNDING-GAP": {
    "name": "Insufficient settlement funds (estimate)",
-   "plain": "Funds available before the settlement date look insufficient. This is only an estimate: topping up before settlement solves it. Whether non-performance on settlement day is a settlement default, and what follows, depends on TWSE rules and your brokerage contract, which have not been imported yet."
+   "plain": "This is an estimated funding gap; topping up before settlement (T+2) resolves it. Failure to settle on time constitutes default. The broker must report it and notify the client, and arrange market disposal of the assumed securities or funds through another broker by the next business day after default. Article 82 provides for collection of the offset price difference. Penalties and brokerage terms follow your broker’s contract; the system does not invent amounts."
   },
   "GENERAL-DISPUTE": {
    "name": "Financial consumer disputes: complain first, then seek mediation",
@@ -108,6 +108,14 @@
   "MARGIN-CALL-THRESHOLD@demo": {
    "name": "[Demo] Hypothetical threshold change to 140%",
    "plain": "This is a fictional regulatory change used to demonstrate rule version differences and recalculation. The current rule is still 130%."
+  },
+  "DT-SETTLEMENT-CYCLE@demo": {
+   "name": "Regular settlement cycle (T+2, source text not yet imported)",
+   "plain": "Settlement is commonly understood to be the second business day after the trade date (T+2). The TWSE Operating Rules text has not been imported yet, so this deadline is unverified."
+  },
+  "DT-FUNDING-GAP@demo": {
+   "name": "Insufficient settlement funds (estimate)",
+   "plain": "Funds available before the settlement date look insufficient. This is only an estimate: topping up before settlement solves it. Whether non-performance on settlement day is a settlement default, and what follows, depends on TWSE rules and your brokerage contract, which have not been imported yet."
   }
  }
 }

@@ -35,7 +35,11 @@ EVENT_META: dict[str, dict] = {
     "buyin_cost_due": {"zh": "強制買回費用清償期限", "en": "Buy-in cost payment due", "next": ["dispute_available"]},
     "settlement_due": {"zh": "交割日", "en": "Settlement date", "next": ["funding_gap_estimated"]},
     "funding_gap_estimated": {"zh": "估計交割資金不足", "en": "Estimated settlement funding gap",
-                              "next": ["dispute_available"]},
+                              "next": ["settlement_default", "dispute_available"]},
+    "settlement_default": {"zh": "未如期交割：違約申報（條件式）", "en": "Settlement default report (conditional)",
+                           "next": ["settlement_default_disposal"]},
+    "settlement_default_disposal": {"zh": "違約承受款券處理期限（條件式）", "en": "Default securities/funds disposal deadline (conditional)",
+                                    "next": ["dispute_available"]},
 }
 
 STATUSES = ("not_triggered", "potential", "triggered_in_simulation", "requires_confirmation", "resolved")

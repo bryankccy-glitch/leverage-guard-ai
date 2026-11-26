@@ -16,7 +16,7 @@ def test_every_sourced_rule_quotes_official_text():
 def test_rules_without_sources_are_flagged():
     unsourced = {rv.rule_id for rv in all_rule_versions() if not rv.raw.get("sources")}
     assert unsourced == {"DT-SETTLEMENT-CYCLE", "DT-FUNDING-GAP"}
-    assert all(rv.is_demo for rv in all_rule_versions() if rv.rule_id in unsourced)
+    assert all(rv.is_demo for rv in all_rule_versions() if not rv.raw.get("sources"))
 
 
 def test_threshold_rule_matching_and_missing_facts():
@@ -105,7 +105,9 @@ def test_demo_b_partial_day_trade():
     types = {n["event_type"]: n for n in r["timeline"]}
     assert "normal_settlement_obligation" in types
     assert types["funding_gap_estimated"]["status"] == "requires_confirmation"
-    assert types["settlement_due"]["unverified"] is True
+    assert types["settlement_due"]["unverified"] is False
+    assert all(not n["unverified"] for n in r["timeline"])
+    assert "Insufficient Legal Evidence" not in str(r)
     assert r["parameters"]["settlement_date"] == "2026-12-03"
 
 
@@ -116,3 +118,37 @@ def test_sell_first_unmatched_timeline():
     t = {n["event_type"]: n for n in r["timeline"]}
     assert t["forced_buy_in"]["date"] == "2026-12-04"
     assert t["buyin_cost_due"]["deadline"] == "2026-12-07"
+
+
+def test_day_trade_sourced_versions_replace_preserved_demo_versions():
+    sel = select_rules("day_trading", date(2026, 12, 1))
+    assert not sel.conflicts
+    for rid, articles in {"DT-SETTLEMENT-CYCLE": {"第57條"}, "DT-FUNDING-GAP": {"第91條", "第82條"}}.items():
+        rv = sel.rules[rid]
+        assert rv.version == "1.0.0" and rv.citation_ok and not rv.is_demo
+        assert rv.review_status == "pending_review"
+        assert {c.article_number for c in rv.citations} == articles
+        assert all(c.source_key == "twse:FL007304" for c in rv.citations)
+        old = next(r for r in all_rule_versions() if r.rule_id == rid and r.version == "0.1.0")
+        assert old.is_demo and old.review_status == "superseded"
+        assert not old.citations
+
+
+def test_conditional_default_disposal_deadline_skips_weekends_and_holidays():
+    for trade, settle, disposal in [(date(2026, 12, 2), "2026-12-04", "2026-12-07"),
+                                   (date(2027, 1, 28), "2027-02-01", "2027-02-11")]:
+        r = run_day_trade_scenario(DayTradeScenarioInput(
+            "buy_first", D("100"), D("1000"), D("100"), D("0"), trade))
+        nodes = {n["event_type"]: n for n in r["timeline"]}
+        assert nodes["settlement_default"]["date"] == settle
+        node = nodes["settlement_default_disposal"]
+        assert node["date"] == node["deadline"] == disposal
+        assert node["status"] == nodes["settlement_default"]["status"] == "potential"
+        assert node["unreviewed"] and not node["unverified"]
+        assert any(c["article_number"] == "第91條" and "次一營業日" in c["quote"]
+                   and c["validated"] for c in node["legal_basis"])
+        assert not r["rule_evaluation"]["unverified_rules"]
+        assert not r["rule_evaluation"]["demo_rules"]
+    funded = run_day_trade_scenario(DayTradeScenarioInput(
+        "buy_first", D("100"), D("1000"), D("100"), D("0"), date(2026, 12, 2), available_cash=D("200000")))
+    assert not any(n["event_type"].startswith("settlement_default") for n in funded["timeline"])

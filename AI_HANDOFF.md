@@ -134,3 +134,31 @@ cd apps/api && .venv/bin/python -m pytest -q
 - commit `2a5a6c9`。後端 → `leverage-guard-3q8xeauok`（上一版 `leverage-guard-2kumyeipg`）；前端 → `leverage-guard-5zqa3zh6q`（上一版 `leverage-guard-1t6my0t92`）。
 - 部署後檢查 PASS：/regulatory/updates 無示範項目；示範登入 404；未登入後台 401；未登入建示範契約 401；訪客 Copilot 拒答；正式站融資頁、法規變動監察、契約頁無【示範】、無 Decimal.js、頂部列無規則版本，選單 9 項，無頁面錯誤。
 - NOT RUN：帳號登入後的儀表板（密碼只有使用者知道）。
+
+## 當沖法源補完與入口恢復（2026-11-26，Codex；未 commit、未部署）
+
+- 使用既有 `.tmp/legal_raw` 執行擷取腳本，未重新下載任何檔案；新增 `twse:FL007304`「臺灣證券交易所股份有限公司營業細則」（115.11.18、270 條），目前共 9 份。原有 8 份的條文與內容雜湊逐一比較完全一致，僅取得時間等中繼資料更新；休市日檔也僅更新取得時間。
+- `DT-SETTLEMENT-CYCLE`、`DT-FUNDING-GAP` 新增 1.0.0，引用第 57、91（第 1、3 項）、82 條，逐字驗證通過，`is_demo=false`、`pending_review`。0.1.0 示範版本保留並標為 `superseded`；原版翻譯也保留供歷史版本顯示。
+- 現有選擇器同優先序且參數相同時取第一筆，不會自動選較新版本，因此明確停用舊示範版本。匯入程式同步停用資料庫中對應的待審查／草稿舊版，避免資料庫狀態覆蓋檔案；已核准／啟用狀態不會被匯入程式擅自改寫。
+- 時間軸沿用既有引用組裝方式，無須修改 `builder.py`。資金缺口時新增「未如期交割：違約申報」與「違約承受款券處理期限」兩個條件式事件；次一營業日使用既有日曆工具計算。只標可能風險，不將預估缺口當成已違約；附第 91 條抵繳、大量違約證券及不可歸責事由的例外提醒。不計算或臆測違約金，未改動任何金額計算邏輯。
+- 恢復側欄模擬群組及模擬首頁的當沖入口（融資之後），未恢復數位分身或 AI Agents 入口。同步更新規則英文、事件英文、法規名稱英文、README 與兩份法規文件。
+- 評估集 `dataset.json` 無依賴舊示範狀態的題目，未修改；重跑結果已寫入 `latest_results.json`。Claude 接手審查後修正 `scripts/run_evaluation.py`：已 `superseded` 的版本不再列入「缺官方出處」，重跑後清單為空；預設選用的 1.0.0 均有法源。
+- Claude 審查與重驗（2026-11-26 晚）：審閱 seed／時間軸／前端 diff；規則檔無 active／approved 狀態，人工審查未被繞過。親自重跑 pytest 79 passed、Ruff PASS、評估引用 34/34、tsc／ESLint／next build PASS；直接執行資金不足情境，時間軸 12/3 交割（第57條）、12/3 違約申報（第82、91條）、12/4 處理期限（第91條），無 Insufficient Legal Evidence。
+
+| 驗收 | 實際結果 |
+|---|---|
+| 後端 `.venv/bin/python -m pytest -q` | PASS：79 passed，無跳過；包含新引用、非示範、版本保留、無缺乏法律證據提示、週末／休市日期限、資金足夠不產生違約事件、英文缺口事件及資料庫匯入／時間軸整合測試 |
+| 後端 `.venv/bin/ruff check .` | PASS：全部通過 |
+| `.venv/bin/python ../../scripts/run_evaluation.py` | PASS：金融 27/27、法律事件 15/15、引用 34/34（原 30/30）、版本 4/4、建議偵測 12/12、輸出審查 6/6；準確率未下降 |
+| 前端 `npx tsc --noEmit` | PASS |
+| 前端 `npx eslint .` | PASS |
+| 前端 `npx next build` | PASS；含 `/simulator/day-trading` 路由 |
+| 本機 `.venv/bin/python -m app.services.seed` | PASS：連線固定為 127.0.0.1:54330；新增 1 份文件、270 條、433 區塊、2 個規則版本；冪等重跑測試通過 |
+| 本機實際 HTTP API（8811） | PASS：中英文 `POST /api/v1/calculate/day-trading` 均 200 且選 1.0.0；`POST /api/v1/simulations` 為 201，`GET /api/v1/simulations/{id}/timeline` 為 200，附已驗證的第 57、82、91 條引用且無缺乏法律證據提示；12/02 成交、12/04 交割、12/07 條件式處理期限 |
+| 頁面字串檢查 | PASS：當沖前端程式無待匯入提示；中英文 API 當沖輸出無過期法源提示，英文非原文欄位無中文殘留 |
+| 瀏覽器互動驗收 | NOT RUN：已嘗試啟動 Playwright Chromium，但瀏覽器以 SIGABRT 中止、清理程序回 EPERM，尚未執行頁面點擊檢查 |
+| 人工法律審查 | NOT RUN：需具法律專業的人員審查，兩條新版維持 pending_review |
+| 正式資料庫、commit、push、部署 | NOT RUN：依本次指示禁止，未操作；未修改 `.env*` 或 `docs/DEPLOYMENT_ACCOUNTS.md` |
+
+- 驗證程序以環境變數明確指定本機資料庫與本機驗證模式，不讀取或寫入正式資料庫。已清除本次新增的驗證暫存情境，並停止本次啟動的 8811 API、3002 前端；既有 8810 程序未動。
+- 未解決限制：日曆資料未涵蓋的年度仍只排除週末，期限保留既有不確定性提示；規則尚待人工審查。建置有既有 `metadataBase` 提醒，pytest 有套件棄用提醒，均未造成驗收失敗。

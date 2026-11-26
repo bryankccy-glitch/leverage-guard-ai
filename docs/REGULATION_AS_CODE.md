@@ -31,7 +31,7 @@
 
 載入時把每個 `quote` 去除空白後，比對 `documents.json` 中同一份文件、同一條號的內容。比對失敗的規則不能被選用，也不能被核准（API 回 409）。測試 `test_every_sourced_rule_quotes_official_text` 會檢查全部規則。
 
-目前 27 個規則版本，有官方來源的 25 個全部通過；2 個沒有來源（T+2 交割、資金不足）標為 `is_demo` 並在時間軸顯示「法律依據待查證」。
+目前 29 個規則版本，有官方來源的 27 個全部通過；T+2 交割與資金不足的 1.0.0 版本已引用營業細則，維持 `pending_review`。原無來源的 0.1.0 示範版本保留並標為 `superseded`，不參與預設選擇；匯入時同步停用資料庫中對應的待審查舊版本。
 
 ## 版本選擇
 
@@ -65,4 +65,4 @@
 | TAX-GENERAL（3‰）／TAX-DAYTRADE（1.5‰，至 2027-12-31） | 證交稅條例第 2、2-2 條 |
 | DT-DEFINITION／ELIGIBILITY／REPORTING／UNMATCHED-LONG／SELL-FIRST-BUYIN／SELL-FIRST-COSTS／LOSS-SUSPENSION | 當日沖銷交易作業辦法第 1、2、6、7、9、13、14 條 |
 | GENERAL-DISPUTE | 金融消費者保護法第 13 條 |
-| DT-SETTLEMENT-CYCLE、DT-FUNDING-GAP | 尚未匯入原文（示範、待查證） |
+| DT-SETTLEMENT-CYCLE、DT-FUNDING-GAP | 營業細則第 57 條；第 91 條第 1、3 項及第 82 條（1.0.0，待人工審查） |

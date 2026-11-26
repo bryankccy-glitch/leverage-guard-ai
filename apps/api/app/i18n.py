@@ -391,6 +391,42 @@ def translate(obj: Any, _key: str | None = None) -> Any:
     return obj
 
 
+EXACT.update({
+    "交割日依證交所營業細則第57條按 T+2 推算，實際收款時間依券商通知": (
+        "Settlement date calculated as T+2 under Article 57 of the TWSE Operating Rules; the payment cutoff "
+        "follows the broker’s notice"
+    ),
+    "若交割期限屆至仍未履行交割義務，券商須申報違約並通知委託人": (
+        "If settlement obligations remain unfulfilled at the deadline, the broker must report default and "
+        "notify the client"
+    ),
+    "若交割日違約，券商承受的款券至遲於次一營業日在市場委託其他券商處理": (
+        "If default occurs on settlement day, the broker must arrange market disposal through another broker "
+        "by the next business day"
+    ),
+    "僅為未如期交割的條件式風險，預估缺口不代表已違約": (
+        "Conditional risk if settlement is missed; an estimated gap does not mean default has occurred"
+    ),
+    "未如期交割：違約申報（條件式）": (
+        "Settlement default report (conditional)"
+    ),
+    "違約承受款券處理期限（條件式）": (
+        "Default securities/funds disposal deadline (conditional)"
+    ),
+    "第91條另有同帳戶同種類同數量證券抵繳、大量違約證券處理及不可歸責於券商的例外，須依實際事實確認": (
+        "Article 91 also provides exceptions for offsetting identical securities in the same account, large "
+        "default positions and circumstances not attributable to the broker; confirm the actual facts"
+    ),
+    "例外：第91條另有同帳戶同種類同數量證券抵繳、大量違約證券處理及不可歸責於券商的例外，須依實際事實確認": (
+        "Exception: Article 91 includes same-account securities offsets, large default positions and "
+        "circumstances not attributable to the broker; confirm the actual facts"
+    ),
+    "臺灣證券交易所股份有限公司營業細則": (
+        "Taiwan Stock Exchange Corporation Operating Rules"
+    ),
+})
+
+
 def register_rules(rules: list[dict[str, Any]], english: dict[str, dict[str, str]]) -> None:
     """把規則名稱與白話說明加入對照（由 rules_en.json 提供）。"""
     for r in rules:
