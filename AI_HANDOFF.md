@@ -105,3 +105,11 @@ cd apps/api && .venv/bin/python -m pytest -q
 - 驗證：後端 pytest 71 passed（新增 tests/test_supabase_auth.py 5 項）、Ruff PASS；前端 tsc、ESLint PASS、next build PASS；本機 supabase 模式：登入頁只剩帳號密碼、示範登入 404、未登入 /admin/users 401、假憑證 401、訪客 Copilot 拒答＋風險資訊正常。
 - NOT RUN：實際用 Supabase 帳號登入（需要使用者先建帳號）。
 - 上線要設的環境變數（API 專案）：AUTH_MODE=supabase、SUPABASE_URL、SUPABASE_ANON_KEY；然後重新部署 API 與前端。切換後示範帳號（含示範管理員）全部失效，管理員帳號需另外把 profiles.role 改成 system_admin。
+
+### 部署紀錄（2026-11-26，使用者同意 commit 與部署）
+- commit `3182cea`。API 環境變數新增 SUPABASE_URL、SUPABASE_ANON_KEY（publishable key），AUTH_MODE 由 local 改為 supabase（用 `vercel env update`；`env rm` 會被 CLI 要求人工核准）。
+- 後端 leverage-guard-api → `leverage-guard-2kumyeipg`（上一版 `leverage-guard-asi5pr8xp`）；前端 leverage-guard-ai → `leverage-guard-1t6my0t92`（上一版 `leverage-guard-8402eatkp`）。
+- 部署後檢查 PASS：/auth/config mode=supabase、示範帳號清單空；示範登入 404；未登入 /admin/users 401；假憑證 401；訪客 Copilot 拒答＋風險資訊；正式站登入頁只有帳號密碼、無頁面錯誤。
+- NOT RUN：真的帳號登入（密碼只有使用者知道）。
+- 待辦：Supabase Auth「Allow new users to sign up」仍開啟（建議關閉）；管理員帳號建立後要把 profiles.role 改為 system_admin（使用者先登入一次讓 profile 建立）。
+- 回復：Vercel 兩個專案 Promote 上一版；或把 AUTH_MODE 改回 local 後重新部署 API。
