@@ -7,6 +7,27 @@ Know the Risk. Understand Your Rights.｜看見風險，理解責任，掌握權
 
 > 本平台不提供投資建議、不推薦股票、不預測股價，也不是律師的正式法律意見。所有帳戶與價格都是模擬資料。
 
+**🔗 線上展示：<https://leverage-guard-ai.vercel.app>**｜API 文件：<https://leverage-guard-api.vercel.app/api/v1/docs>
+
+## 為什麼做這個
+
+很多投資人開了融資、當沖帳戶，卻不知道「維持率跌破 130% 之後會發生什麼」：哪天要補繳、補多少、沒補會被怎麼處分、處分完還欠多少。這些答案散落在證交所規章與法規條文裡，一般人很難看懂。
+
+LeverageGuard AI 把**金融計算、法規條文與 AI 說明**串在一起：輸入持股與價格變化，就能看到損失數字、法律時間軸和白話解釋，而且每一個數字都能展開公式、每一句說明都附官方條文出處。
+
+## 專案亮點
+
+| 亮點 | 說明 |
+|---|---|
+| 計算不交給 AI | 所有金額由後端 Decimal 計算引擎產生，AI 只負責白話說明，避免 LLM 算錯錢 |
+| Regulation-as-Code | 把法規寫成有版本、生效日期、可比對原文的規則，法規修正時舊情境仍能重算 |
+| 有出處的 RAG | 法律檢索結合關鍵字＋語意搜尋，回答引用必須真實存在於官方條文 |
+| 可稽核的多 Agent | 11 個 Agent 分工，每一步都留紀錄並即時顯示，看得到 AI 怎麼得出結論 |
+| 安全與權限 | Supabase Auth、資料列層級權限（RLS）、拒絕投資建議的護欄 |
+| 測試 | 後端 pytest（金融 golden test、RLS 權限測試）與 Playwright E2E |
+
+**技術棧**：Next.js · React · TypeScript · Tailwind CSS · FastAPI · SQLAlchemy · PostgreSQL + pgvector · Supabase · Ollama（Qwen3）· Vercel
+
 ## 功能
 
 - **融資風險模擬器**：滑桿即時預覽（Decimal.js），後端 Decimal 正式計算；擔保維持率、追繳門檻股價、第 54 條補繳差額、交易成本、本金損益率；每個數字可展開公式。
@@ -69,9 +90,11 @@ cd apps/api && .venv/bin/python -m app.services.seed           # 新版本寫入
 
 或設定 `LEGAL_SOURCE_SYNC_ENABLED=true`，由管理員在 `/admin/legal-sources` 比對版本，系統只建立待審查的更新。
 
-## 部署（尚未執行）
+## 部署
 
-| 元件 | 建議 | 設定 |
+目前正式環境：前端與 API 都部署在 Vercel，資料庫使用 Supabase（見上方線上展示連結）。雲端版沒有本機 Ollama，AI 說明會改用規則模板並清楚標示。
+
+| 元件 | 平台 | 設定 |
 |---|---|---|
 | 前端 | Vercel | `NEXT_PUBLIC_API_URL`、（使用 Supabase Auth 時）`NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | 後端 | Cloud Run／Railway／Render | `DATABASE_URL`、`AUTH_MODE=supabase`、`SUPABASE_JWT_SECRET`、`ALLOWED_ORIGINS`、`LLM_PROVIDER`（雲端環境沒有本機 Ollama 時用 `gemini` 或自架 Ollama） |
