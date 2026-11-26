@@ -36,6 +36,7 @@ jobs:
       - working-directory: apps/web
         run: |
           npm ci
+          npx next typegen   # 先產生 LayoutProps 等 Next.js 路由型別，tsc 才找得到
           npx tsc --noEmit
           npx eslint .
           npx next build

@@ -144,8 +144,9 @@ def test_signed_in_pages_have_no_chinese_in_english():
         assert r.status_code == 200, (path, r.text)
         assert leftovers(r.json()) == [], path
     sims = client.get("/api/v1/simulations", headers=h).json()["items"]
-    if sims:
-        sid = sims[0]["id"]
+    # 每一筆都檢查：示範情境 A／B 建立時間相同，只看第一筆會因排序不固定而時好時壞
+    for sim in sims:
+        sid = sim["id"]
         for path in (f"/api/v1/simulations/{sid}", f"/api/v1/simulations/{sid}/timeline"):
             r = client.get(path, headers=h)
             if r.status_code == 404 and path.endswith("/timeline"):

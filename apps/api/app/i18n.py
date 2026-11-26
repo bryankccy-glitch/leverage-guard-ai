@@ -142,7 +142,7 @@ EXACT: dict[str, str] = {
     # --- 預設情境
     "交割資金不足": "Insufficient settlement funds", "交易規則版本變更（虛構示範規則 140%）": "Rule version change (fictional demo rule: 140%)",
     "先賣後買但未完成買回": "Sold first but not bought back", "收到補繳通知後未補繳": "No top-up after the notice", "流動性不足：處分連續六日無法全數成交": "Illiquidity: disposal not fully filled for six days",
-    "當沖買進後未完成賣出": "Day trade bought but not sold", "示範股票（虛構）": "Demo stock (fictional)", "股價下跌 10%": "Price falls 10%", "股價下跌 20%": "Price falls 20%",
+    "當沖買進後未完成賣出": "Day trade bought but not sold", "示範股票（虛構）": "Demo stock (fictional)", "第一階段": "Stage 1", "第二階段": "Stage 2", "第三階段": "Stage 3", "第四階段": "Stage 4","股價下跌 10%": "Price falls 10%", "股價下跌 20%": "Price falls 20%",
     "股價下跌 5%": "Price falls 5%", "處分後仍有剩餘債務": "Residual debt after disposal", "證券商契約條款不同（通知於次一營業日送達）": "Different contract terms (notice delivered the next business day)",
     "連續數日下跌（自訂跌幅，非真實漲跌幅限制）": "Several days of declines (custom drops, not real price limits)",
     # --- 時間軸事件
@@ -315,7 +315,7 @@ PATTERNS: list[tuple[str, str]] = [
     ("{}必須介於 0 與 {} 之間", "{0} must be between 0 and {1}"),
     ("不支援的數字型別：{}", "Unsupported number type: {0}"), ("不是合法數字：{}", "Not a valid number: {0}"),
     ("以模擬價格 {} 處分擔保品", "Collateral disposed at the simulated price of {0}"), ("使用者補繳 {} 元", "You top up {0}"),
-    ("模擬價格 {}", "Simulated price {0}"), ("模擬連續 {} 個營業日無法全數成交", "Simulated: not fully filled for {0} consecutive business days"),
+    ("模擬價格 {}（{}）", "Simulated price {0} ({1})"), ("模擬價格 {}", "Simulated price {0}"),("模擬連續 {} 個營業日無法全數成交", "Simulated: not fully filled for {0} consecutive business days"),
     ("維持率 {}% 低於門檻 {}%", "Ratio {0}% below the {1}% threshold"), ("自通知送達日起 {} 個營業日", "{0} business days from notice delivery"),
     ("成交日後第 {} 個營業日", "Business day {0} after the trade date"),
     ("{}：買 {} 股、賣 {} 股", "{0}: bought {1} shares, sold {2} shares"),
