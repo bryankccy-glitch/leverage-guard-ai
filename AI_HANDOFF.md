@@ -129,3 +129,8 @@ cd apps/api && .venv/bin/python -m pytest -q
 - E：頁面間距加大（space-y-6、gap-5/6、main px-4）。
 - E2E：core.spec 融資測試配合收合調整（先展開計算結果；後端正式計算改在計算假設內檢查）。該測試自 12a19f3 起即會失敗（計算結果預設收合），本次一併修正。
 - 驗證：pytest 75 passed、Ruff PASS、tsc PASS、ESLint PASS、Playwright 10/10 passed、next build PASS（暫存複本）。
+
+### 部署紀錄（2026-11-26 晚，使用者同意 commit 與部署）
+- commit `2a5a6c9`。後端 → `leverage-guard-3q8xeauok`（上一版 `leverage-guard-2kumyeipg`）；前端 → `leverage-guard-5zqa3zh6q`（上一版 `leverage-guard-1t6my0t92`）。
+- 部署後檢查 PASS：/regulatory/updates 無示範項目；示範登入 404；未登入後台 401；未登入建示範契約 401；訪客 Copilot 拒答；正式站融資頁、法規變動監察、契約頁無【示範】、無 Decimal.js、頂部列無規則版本，選單 9 項，無頁面錯誤。
+- NOT RUN：帳號登入後的儀表板（密碼只有使用者知道）。
