@@ -56,6 +56,7 @@
     "legal": "Legal knowledge center",
     "rights": "Rights & obligations",
     "timeline": "Responsibility timeline",
+    "disputes": "Complaints & help",
     "contracts": "Contract analysis",
     "monitoring": "Monitoring",
     "regulatory": "Regulatory monitor",
@@ -480,10 +481,11 @@
     "placeholder": "e.g. What happens if the price falls another 10%?",
     "send": "Send",
     "suggestions": [
+      "Should I buy on margin right now?",
       "What happens if the price falls another 10%?",
       "What is the difference between a margin call and liquidation?",
       "Why could I still owe money after losing my principal?",
-      "What happens if a day trade is not offset?"
+      "When does the top-up deadline start counting?"
     ],
     "refusal": "No trading advice",
     "comparison": "Before / after recalculation",

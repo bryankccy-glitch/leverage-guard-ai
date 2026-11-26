@@ -48,6 +48,41 @@ def parse_scenario(message: str, current_price: Decimal) -> dict[str, Any] | Non
     return None
 
 
+RISK_FACTS_GENERAL = [
+    "整戶擔保維持率低於 130% 時，券商會通知補繳；通知送達後 2 個營業日內未補足、且期限當日仍低於門檻，"
+    "券商自次一營業日起處分擔保品（證交所融資融券業務操作辦法第 54、55 條）。",
+    "處分所得不足清償借款時，券商會通知你補足差額：本金虧完不代表債務結束（同辦法第 55、81 條）。",
+]
+
+
+def _risk_facts(ctx: dict[str, Any]) -> tuple[list[str], list[dict[str, Any]]]:
+    """拒答時附上的客觀風險資訊：只陳述規則與以目前模擬參數算出的數字，不評論該不該交易。"""
+    from ..schemas.calc import MarginCalcIn
+    from ..services import calc_service
+
+    facts: list[str] = []
+    used: list[dict[str, Any]] = []
+    if ctx.get("trading_type") == "margin" and ctx.get("input"):
+        try:
+            inp = dict(ctx["input"])
+            r = calc_service.margin_calc(MarginCalcIn(**{**inp, "curve": False}))
+            ratio = Decimal(str(inp.get("financing_ratio") or "0.6"))
+            lev = (Decimal(1) / (Decimal(1) - ratio)).quantize(Decimal("0.01"))
+            def pct(d: Decimal) -> str:
+                return format((d * 100).normalize(), "f")
+            facts.append(f"以目前的融資比例 {ratio}，自備 {pct(1 - ratio)}%、借款 "
+                         f"{pct(ratio)}%：股價每下跌 1%，自備本金約減少 {lev}%（未計費用）。")
+            m = r["metrics"]
+            mr, tp = m["maintenance_ratio"]["value"], m["threshold_price"]["value"]
+            if mr is not None and tp is not None:
+                facts.append(f"模擬價格 {inp.get('current_price')} 時擔保維持率約 {mr}%，"
+                             f"估計追繳門檻股價約 {tp}（簡化估算，不是確定的斷頭價）。")
+            used.append({"tool": "financial_engine.margin"})
+        except Exception:  # noqa: BLE001 — 參數不完整時只給一般規則，不中斷拒答
+            pass
+    return facts + RISK_FACTS_GENERAL, used
+
+
 def answer(message: str, context: dict[str, Any] | None) -> dict[str, Any]:
     from ..schemas.calc import MarginCalcIn
     from ..services import calc_service
@@ -55,8 +90,9 @@ def answer(message: str, context: dict[str, Any] | None) -> dict[str, Any]:
     message = message.strip()[:1000]
     tools: list[dict[str, Any]] = []
     if is_advice_request(message):
-        return {"answer": REFUSAL, "kind": "refusal", "citations": [], "tool_calls": [], "comparison": None,
-                "provider": "rule"}
+        facts, used = _risk_facts(context or {})
+        return {"answer": REFUSAL, "kind": "refusal", "citations": [], "tool_calls": used, "comparison": None,
+                "provider": "rule", "risk_facts": facts}
 
     comparison = None
     ctx = context or {}

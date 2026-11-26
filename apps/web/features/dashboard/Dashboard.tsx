@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, FileSearch, FileText, FlaskConical, Radar, RefreshCw, Scale, TrendingDown, Zap } from "lucide-react";
+import { ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, FileSearch, FileText, FlaskConical, Radar, RefreshCw, Scale, TrendingDown, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
@@ -131,9 +131,9 @@ export function Dashboard() {
       {/* 快速開始（訪客也可用） */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <QuickAction href="/simulator/margin" icon={<TrendingDown size={18} />} label={t("dashboard.qaMargin")} />
-        <QuickAction href="/simulator/day-trading" icon={<Zap size={18} />} label={t("dashboard.qaDayTrade")} />
         <QuickAction href="/contracts/upload" icon={<FileText size={18} />} label={t("dashboard.qaContract")} />
         <QuickAction href="/scenarios/new" icon={<FlaskConical size={18} />} label={t("dashboard.qaLab")} />
+        <QuickAction href="/legal/disputes" icon={<LifeBuoy size={18} />} label={t("nav.disputes")} />
       </div>
       <Card className="p-5">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-ink"><BookOpenText size={18} className="text-brand" />{t("dashboard.knowledge")}</h2>

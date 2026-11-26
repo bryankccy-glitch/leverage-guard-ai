@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Layers, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { ArrowUpRight, Layers, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useL } from "@/lib/i18n";
@@ -11,7 +11,6 @@ export function SimulatorIndex() {
   const L = useL();
   const items = [
     { href: "/simulator/margin", title: t("nav.margin"), desc: L("維持率、追繳門檻、補繳差額、剩餘債務", "Maintenance ratio, call threshold, top-up amount, residual debt"), icon: <TrendingDown size={20} />, badge: "P0" },
-    { href: "/simulator/day-trading", title: t("nav.dayTrading"), desc: L("完成／未完成沖銷、交割資金缺口、強制買回", "Completed / incomplete offsets, settlement funding gaps, forced buy-ins"), icon: <Zap size={20} />, badge: "P0" },
     { href: "/simulator/portfolio", title: L("整戶維持率試算", "Account-level maintenance ratio"), desc: L("多個融資部位合併計算（不是各部位平均）", "Combines multiple margin positions (not an average of positions)"), icon: <Layers size={20} />, badge: "P1" },
     { href: "/simulator/short-selling", title: L("融券模擬", "Short selling simulation"), desc: L("第二階段功能", "Phase-two feature"), icon: <TrendingUp size={20} />, badge: "P2" },
   ];

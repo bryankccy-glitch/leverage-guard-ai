@@ -232,6 +232,11 @@ EXACT: dict[str, str] = {
     "補繳差額依第 54 條公式計算，不是補到 130%": "The top-up amount follows the Art. 54 formula; it is not 'back to 130%'",
     "追繳門檻股價不是確定的斷頭價": "The call-threshold price is not a definite liquidation price",
     "處分與違約須視通知、期限與契約而定": "Disposal and default depend on notices, deadlines and the contract",
+    # --- Copilot 拒答附帶的風險資訊
+    "整戶擔保維持率低於 130% 時，券商會通知補繳；通知送達後 2 個營業日內未補足、且期限當日仍低於門檻，券商自次一營業日起處分擔保品（證交所融資融券業務操作辦法第 54、55 條）。":
+        "When the account-level maintenance ratio falls below 130%, the broker notifies you to top up; if you have not topped up within 2 business days of the notice and the ratio is still below the threshold on the deadline, the broker disposes of collateral from the next business day (TWSE margin operating rules Arts. 54–55).",
+    "處分所得不足清償借款時，券商會通知你補足差額：本金虧完不代表債務結束（同辦法第 55、81 條）。":
+        "If disposal proceeds do not repay the loan, the broker asks you to pay the difference: losing your principal does not end the debt (same rules, Arts. 55 and 81).",
     # --- 報告
     "1. 模擬情境摘要": "1. Scenario summary", "10. 契約注意事項": "10. Contract notes", "11. 尚待確認的資訊": "11. Information still to confirm",
     "12. 官方資料來源": "12. Official data sources", "13. 計算假設": "13. Calculation assumptions", "14. 分析限制": "14. Limitations",
@@ -338,6 +343,10 @@ PATTERNS: list[tuple[str, str]] = [
     ("AI 有 {} 筆引用在文件中找不到，已捨棄", "{0} AI citation(s) were not found in the document and were dropped"),
     ("生成式 AI 不可用，只提供確定性條款切分與分類：{}", "Generative AI unavailable; only deterministic clause splitting and classification are provided: {0}"),
     ("Value error, {}", "Value error, {0}"),
+    ("以目前的融資比例 {}，自備 {}%、借款 {}%：股價每下跌 1%，自備本金約減少 {}%（未計費用）。",
+     "At the current financing ratio of {0} (own funds {1}%, loan {2}%), each 1% price drop cuts your own funds by about {3}% (before costs)."),
+    ("模擬價格 {} 時擔保維持率約 {}%，估計追繳門檻股價約 {}（簡化估算，不是確定的斷頭價）。",
+     "At the simulated price of {0}, the maintenance ratio is about {1}% and the estimated call-threshold price is about {2} (a simplified estimate, not a definite liquidation price)."),
     ("第{}條", "Art. {0}"), ("第 {} 條", "Art. {0}"), ("第{}條之{}", "Art. {0}-{1}"),
 ]
 
@@ -348,7 +357,8 @@ def _compile(zh: str) -> re.Pattern[str]:
     return re.compile(f"^{body}$", re.S)
 
 
-_COMPILED = [(_compile(zh), en) for zh, en in PATTERNS]
+# 固定文字越長的樣板越具體，先比對；否則「模擬價格 {}」這類短樣板會吃掉整句
+_COMPILED = [(_compile(zh), en) for zh, en in sorted(PATTERNS, key=lambda p: -len(p[0].replace("{}", "")))]
 _CJK = re.compile(r"[一-鿿]")
 
 

@@ -186,3 +186,16 @@ def test_reviewer_pages_in_english():
             r = client.get(path, headers=h)
             assert r.status_code == 200, (path, r.text)
             assert leftovers(r.json()) == [], path
+
+
+@db
+def test_guest_copilot_refusal_includes_objective_risk_facts():
+    ctx = {"trading_type": "margin", "input": {"asset_label": "Demo", "buy_price": "100", "quantity": "1000",
+                                               "financing_ratio": "0.6", "current_price": "100"}}
+    zh = client.post("/api/v1/copilot/guest", json={"message": "我現在該不該融資買進？", "context": ctx})
+    assert zh.status_code == 200 and zh.json()["kind"] == "refusal"
+    facts = zh.json()["risk_facts"]
+    assert any("2.50%" in f for f in facts) and any("78.00" in f for f in facts)
+    en = client.post("/api/v1/copilot/guest", headers=EN, json={"message": "Should I buy on margin right now?", "context": ctx})
+    assert en.status_code == 200 and en.json()["kind"] == "refusal"
+    assert leftovers(en.json()) == []

@@ -3,9 +3,9 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Activity, Bell, BookOpenText, Bot, ChevronDown, ChevronRight, FileSearch, FileText, FlaskConical, History, Languages,
-  LayoutGrid, LogIn, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Radar, Scale, Search, Settings, ShieldCheck,
-  Sun, Timer, TrendingDown, UserRound, Users, X, Zap,
+  Activity, Bell, BookOpenText, ChevronDown, ChevronRight, FileSearch, FileText, FlaskConical, History, Languages,
+  LayoutGrid, LifeBuoy, LogIn, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Radar, Scale, Search, Settings, ShieldCheck,
+  Sun, Timer, TrendingDown, Users, X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -79,9 +79,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
       label: t("nav.simulation"),
       items: [
         { href: "/simulator/margin", key: "nav.margin", icon: <TrendingDown size={18} /> },
-        { href: "/simulator/day-trading", key: "nav.dayTrading", icon: <Zap size={18} /> },
         { href: "/scenarios", key: "nav.lab", icon: <FlaskConical size={18} />, badge: counts?.scenarios },
-        { href: "/digital-twin", key: "nav.twin", icon: <UserRound size={18} /> },
       ],
     },
     {
@@ -91,13 +89,13 @@ function AppShellInner({ children }: { children: ReactNode }) {
         { href: "/legal/rights", key: "nav.rights", icon: <Scale size={18} />, badge: counts?.pending_legal_items || null },
         { href: "/legal/timeline", key: "nav.timeline", icon: <Timer size={18} /> },
         { href: "/contracts", key: "nav.contracts", icon: <FileSearch size={18} />, badge: counts?.contracts },
+        { href: "/legal/disputes", key: "nav.disputes", icon: <LifeBuoy size={18} /> },
       ],
     },
     {
       label: t("nav.monitoring"),
       items: [
         { href: "/regulatory-monitor", key: "nav.regulatory", icon: <Radar size={18} />, badge: counts?.reg_updates },
-        { href: "/agents", key: "nav.agents", icon: <Bot size={18} /> },
       ],
     },
     {
@@ -294,7 +292,7 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
 
 const CRUMB_KEYS: Record<string, string> = {
   dashboard: "nav.dashboard", simulator: "nav.simulation", margin: "nav.margin", "day-trading": "nav.dayTrading",
-  scenarios: "nav.lab", "digital-twin": "nav.twin", legal: "nav.legal", rights: "nav.rights", timeline: "nav.timeline",
+  scenarios: "nav.lab", "digital-twin": "nav.twin", legal: "nav.legal", rights: "nav.rights", timeline: "nav.timeline", disputes: "nav.disputes",
   contracts: "nav.contracts", "regulatory-monitor": "nav.regulatory", agents: "nav.agents", reports: "nav.reports",
   history: "nav.history", notifications: "nav.notifications", settings: "nav.settings", admin: "nav.admin",
 };

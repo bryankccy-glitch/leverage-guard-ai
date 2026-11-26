@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Bot, Send, ShieldOff } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
-import { useIsEn } from "@/lib/i18n";
+import { useIsEn, useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, ErrorState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtValue } from "@/lib/format";
@@ -17,6 +17,7 @@ type Answer = {
   citations: { id: string; official_title: string; article_number: string; official_url: string; version: string; content: string }[];
   comparison: null | { basis: string; new_price: string; before: Record<string, string>; after: Record<string, string>; labels: Record<string, string>; events_before: string[]; events_after: string[] };
   uncertainties?: string[];
+  risk_facts?: string[];
   provider: string;
   model?: string;
   tool_calls: { tool: string }[];
@@ -25,6 +26,7 @@ type Answer = {
 /** 內嵌在模擬器與法律頁面的 Copilot：讀取目前的模擬參數，數字一律由計算引擎重算。 */
 export function Copilot({ context }: { context?: { trading_type: string; input: Record<string, unknown> } }) {
   const isEn = useIsEn();
+  const L = useL();
   const t = useTranslations("copilot");
   const locale = useLocale();
   const token = useAuth((s) => s.token);
@@ -44,9 +46,18 @@ export function Copilot({ context }: { context?: { trading_type: string; input: 
       <CardHeader title={<span className="flex items-center gap-2"><Bot size={18} className="text-brand" aria-hidden />{t("title")}</span>} desc={t("disclaimer")} />
       <div className="space-y-3 p-5">
         <div className="flex flex-wrap gap-2">
-          {(t.raw("suggestions") as string[]).map((s) => (
-            <button key={s} onClick={() => send(s)} className="rounded-full border border-line px-3 py-1 text-[12px] text-ink-2 hover:bg-surface-muted">{s}</button>
-          ))}
+          {(t.raw("suggestions") as string[]).map((s, i) =>
+            i === 0 ? (
+              // 第一顆固定是拒答示範：示範系統不提供買賣建議，但仍給客觀風險資訊
+              <button key={s} onClick={() => send(s)} className="inline-flex items-center gap-1.5 rounded-full border border-warning/50 bg-warning-soft px-3 py-1 text-[12px] text-ink hover:brightness-95">
+                <ShieldOff size={12} className="text-warning" aria-hidden />
+                <span className="font-semibold text-warning">{L("拒答示範", "Refusal demo")}</span>
+                {s}
+              </button>
+            ) : (
+              <button key={s} onClick={() => send(s)} className="rounded-full border border-line px-3 py-1 text-[12px] text-ink-2 hover:bg-surface-muted">{s}</button>
+            ),
+          )}
         </div>
         <ul className="max-h-[420px] space-y-3 overflow-y-auto" aria-live="polite">
           {log.map((x, i) => (
@@ -59,6 +70,12 @@ export function Copilot({ context }: { context?: { trading_type: string; input: 
                   {x.a.tool_calls.map((c, j) => <Badge key={j} tone="blue">{c.tool}</Badge>)}
                 </div>
                 <p className="whitespace-pre-line text-ink">{x.a.answer}</p>
+                {x.a.risk_facts?.length ? (
+                  <div className="mt-2 rounded-[8px] border border-line bg-surface p-2">
+                    <p className="mb-1 text-[12px] font-semibold text-ink-2">{L("客觀風險資訊（不是建議）", "Objective risk information (not advice)")}</p>
+                    <ul className="list-disc space-y-1 pl-5 text-[12.5px] text-ink-2">{x.a.risk_facts.map((f, j) => <li key={j}>{f}</li>)}</ul>
+                  </div>
+                ) : null}
                 {x.a.comparison ? (
                   <div className="mt-2 rounded-[8px] border border-line bg-surface p-2">
                     <p className="mb-1 text-[12px] font-semibold text-ink-2">{t("comparison")}{isEn ? ": " : "："}{x.a.comparison.basis}</p>
@@ -78,7 +95,7 @@ export function Copilot({ context }: { context?: { trading_type: string; input: 
                 ) : null}
                 {x.a.citations.length ? (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-[12px] text-ink-2">{t("citations")}（{x.a.citations.length}）</summary>
+                    <summary className="cursor-pointer text-[12px] text-ink-2">{t("citations")}{isEn ? ` (${x.a.citations.length})` : `（${x.a.citations.length}）`}</summary>
                     <ul className="mt-1 space-y-1">
                       {x.a.citations.map((c) => (
                         <CitationItem key={c.id} c={{ source_key: c.id, official_title: c.official_title, article_number: c.article_number, official_url: c.official_url, version: c.version, quote: c.content.slice(0, 160) + (c.content.length > 160 ? "…" : ""), validated: true, authority: "官方原文", source_type: "", retrieved_at: "", validation_note: null }} />

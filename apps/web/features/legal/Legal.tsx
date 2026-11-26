@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookOpenText, ExternalLink, FileText, Phone, Search } from "lucide-react";
+import { BookOpenText, ExternalLink, FileText, ListChecks, Phone, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
-import { articleLabel, authorityLabel, lawTitle, useIsEn, useL } from "@/lib/i18n";
+import { articleLabel, authorityLabel, lawTitle, useIsEn, useL, amendedDate } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Input, LoadingBlock, Notice, Select } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtDate } from "@/lib/format";
@@ -48,7 +48,7 @@ export function DocList({ docs }: { docs: Doc[] }) {
           <FileText size={18} className="text-brand" aria-hidden />
           <Link href={`/legal/regulations/${d.source_key}`} className="min-w-0 flex-1 font-medium text-ink hover:text-brand">{lawTitle(d.source_key, d.official_title, isEn)}</Link>
           <Badge tone={d.source_type === "exchange_rule" ? "blue" : d.source_type === "statute" ? "brand" : "unknown"}>{t(`sourceType.${d.source_type}`)}</Badge>
-          <span className="num text-[12px] text-ink-3">v{d.version} · {d.article_count} {t("articles")} · {t("retrievedAt")} {fmtDate(d.retrieved_at, locale)}</span>
+          <span className="num text-[12px] text-ink-3">{amendedDate(d.version) ? (isEn ? `Last amended ${amendedDate(d.version)}` : `最新修正 ${amendedDate(d.version)}`) : `v${d.version}`} · {d.article_count} {t("articles")} · {t("retrievedAt")} {fmtDate(d.retrieved_at, locale)}</span>
         </li>
       ))}
     </ul>
@@ -136,7 +136,7 @@ function ArticleCard({ a }: { a: Article }) {
       <div className="flex flex-wrap items-center gap-2">
         <Link href={`/legal/regulations/${a.source_key}#${a.article_number}`} className="font-semibold text-ink hover:text-brand">{lawTitle(a.source_key, a.official_title, isEn)} {articleLabel(a.article_number, isEn)}</Link>
         <Badge tone={a.source_type === "exchange_rule" ? "blue" : "brand"}>{t(`sourceType.${a.source_type}`)}</Badge>
-        <span className="num text-[11px] text-ink-3">v{a.version}</span>
+        <span className="num text-[11px] text-ink-3">{amendedDate(a.version) ? (isEn ? `Last amended ${amendedDate(a.version)}` : `最新修正 ${amendedDate(a.version)}`) : `v${a.version}`}</span>
         <a href={a.official_url} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 text-[12px] text-blue hover:underline">{t("openOfficial")}<ExternalLink size={11} /></a>
       </div>
       {a.chapter ? <p lang="zh-Hant-TW" className="mt-0.5 text-[12px] text-ink-3">{a.chapter}</p> : null}
@@ -166,7 +166,7 @@ export function RegulationDetail({ id }: { id: string }) {
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
           <Badge tone="brand">{t(`sourceType.${d.source_type}`)}</Badge>
           <span>{authorityLabel(d.authority, isEn)}</span>
-          <span className="num">v{d.version}</span>
+          <span className="num">{amendedDate(d.version) ? (isEn ? `Last amended ${amendedDate(d.version)}` : `最新修正 ${amendedDate(d.version)}`) : `v${d.version}`}</span>
           <span className="num">{t("retrievedAt")} {fmtDate(d.retrieved_at, locale, true)}</span>
           <span className="num text-[11px] text-ink-3" title={L("內容雜湊（SHA-256）", "Content hash (SHA-256)")}>#{d.content_hash.slice(0, 12)}</span>
           <a href={d.official_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue hover:underline">{t("openOfficial")}<ExternalLink size={12} /></a>
@@ -280,11 +280,26 @@ export function LegalTimelinePage() {
   );
 }
 
+const DISPUTE_DOCS: [string, string, string, string][] = [
+  ["對帳單（追繳前後幾個營業日）", "證明當時的持股、融資金額與擔保維持率", "Statements (several business days around the margin call)", "Shows your holdings, margin loan and maintenance ratio at the time"],
+  ["追繳（補繳）通知與送達紀錄", "簡訊、Email、App 推播或電話錄音的時間；補繳期限從送達日起算", "Margin call notice and proof of delivery", "Time of the SMS, email, app push or call recording; the top-up deadline counts from delivery"],
+  ["處分通知與處分成交明細", "核對處分的時點、價格與股數", "Disposal notice and disposal trade details", "To check when, at what price and how many shares were sold"],
+  ["結算明細或剩餘債務通知", "核對溢額發還或不足金額的計算", "Settlement details or residual debt notice", "To check how any surplus or shortfall was calculated"],
+  ["融資融券契約與風險預告書", "追繳比率、補繳期限與處分方式以契約約定為準", "Margin contract and risk disclosure statement", "Call ratios, top-up deadlines and disposal methods follow your contract"],
+  ["補繳匯款或入帳證明（如有）", "證明你在期限內補繳了多少、何時入帳", "Proof of top-up transfer or deposit (if any)", "Shows how much you topped up and when it arrived"],
+  ["與券商的往來紀錄與申訴單號", "證明已先向券商申訴及日期（30 日、60 日期限由此起算）", "Correspondence with the broker and complaint reference number", "Proves you complained to the broker first and when (the 30- and 60-day periods count from here)"],
+];
+
 export function DisputesPage() {
   const t = useTranslations("legal");
   const L = useL();
+  const isEn = useIsEn();
   return (
     <div className="space-y-5">
+      <Notice tone="blue" title={L("什麼時候用得到", "When this applies")}>
+        {L("對追繳通知的送達時間、補繳差額的計算、處分的時點或價格、處分後的結算與剩餘債務有疑義時。本頁只整理一般流程與官方管道，不是法律意見；個案請以契約、券商通知與專業人士意見為準。",
+          "When you dispute when a margin call notice was delivered, how the top-up amount was calculated, when or at what price collateral was sold, or the settlement and residual debt afterwards. This page only summarises the general process and official channels and is not legal advice; for your own case, rely on your contract, the broker's notices and professional advice.")}
+      </Notice>
       <div className="grid gap-4 md:grid-cols-3">
         {[
           ["1", L("先向券商申訴", "Complain to the broker first"), L("金融消費者應先向金融服務業提出申訴；券商應於收受申訴之日起 30 日內處理並回覆。", "Financial consumers must first complain to the financial service provider; the broker must handle and reply within 30 days of receiving the complaint.")],
@@ -298,6 +313,20 @@ export function DisputesPage() {
           </Card>
         ))}
       </div>
+      <Card>
+        <CardHeader title={L("應備文件清單", "Documents to prepare")} desc={L("保留原件或截圖並註明日期；評議機構會要求你提出已先向券商申訴的證明。", "Keep originals or dated screenshots; the mediation body will ask for proof that you complained to the broker first.")} />
+        <ul className="divide-y divide-line px-5 pb-3">
+          {DISPUTE_DOCS.map(([zh, zhWhy, en, enWhy]) => (
+            <li key={zh} className="flex items-start gap-3 py-3">
+              <ListChecks size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden />
+              <span>
+                <span className="block text-[14px] font-medium text-ink">{isEn ? en : zh}</span>
+                <span className="block text-[12.5px] text-ink-3">{isEn ? enWhy : zhWhy}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Card>
       <Card>
         <CardHeader title={L("法律依據", "Legal basis")} />
         <div className="p-5">

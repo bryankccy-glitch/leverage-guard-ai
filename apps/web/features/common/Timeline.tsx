@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Badge, EventStatus } from "@/components/ui";
 import { cn, fmtDate, fmtNum } from "@/lib/format";
-import { articleLabel, authorityLabel, lawTitle, useIsEn, useL } from "@/lib/i18n";
+import { articleLabel, authorityLabel, lawTitle, useIsEn, useL, amendedDate } from "@/lib/i18n";
 import type { Citation, TimelineNode } from "./types";
 
 const NEUTRAL = new Set(["position_opened", "price_change", "trade_executed", "top_up_paid", "offset_reported"]);
@@ -100,7 +100,7 @@ export function CitationItem({ c }: { c: Citation }) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-ink">{lawTitle(c.source_key, c.official_title, isEn)} {articleLabel(c.article_number, isEn)}</span>
         <Badge tone={c.validated ? "normal" : "critical"} icon={<BadgeCheck size={12} aria-hidden />}>{c.validated ? t("quoteValidated") : t("quoteFailed")}</Badge>
-        <span className="num text-[11px] text-ink-3">v{c.version}</span>
+        <span className="num text-[11px] text-ink-3">{amendedDate(c.version) ? (isEn ? `Last amended ${amendedDate(c.version)}` : `最新修正 ${amendedDate(c.version)}`) : `v${c.version}`}</span>
         <a href={c.official_url} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 text-[12px] text-blue hover:underline">
           {authorityLabel(c.authority, isEn)} <ExternalLink size={11} aria-hidden />
         </a>

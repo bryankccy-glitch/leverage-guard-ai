@@ -2,14 +2,14 @@
 
 import * as Slider from "@radix-ui/react-slider";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, Info, RotateCcw, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Info, RotateCcw, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, CardHeader, ErrorState, Field, Input, LoadingBlock, Notice, NumberField, SimBadge, SuccessNote } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { cn, fmtMoney, fmtNum, nextWeekday, todayTW, useToday } from "@/lib/format";
-import { articleLabel, lawTitle, useL } from "@/lib/i18n";
+import { articleLabel, lawTitle, useL, amendedDate } from "@/lib/i18n";
 import { marginPreview } from "@/lib/margin-preview";
 import { useAuth } from "@/stores/auth";
 import { RunProgress } from "../agents/RunProgress";
@@ -63,6 +63,9 @@ export function MarginSimulator() {
   const locale = useLocale();
   const L = useL();
   const isEn = locale === "en";
+  // 長區塊預設收合，畫面只留核心數字、圖表與 Copilot
+  const [open, setOpen] = useState({ metrics: false, assumptions: false, rules: false });
+  const toggle = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
   const token = useAuth((s) => s.token);
   const [inpState, setInp] = useState<Inputs>(DEFAULTS);
   // 日期只在瀏覽器端取得（預先渲染時不能讀取目前時間）
@@ -212,18 +215,23 @@ export function MarginSimulator() {
             </div>
           </Card>
           <Card>
-            <CardHeader title={t("sim.metricsTitle")} desc={L("點一下任一數字可以看公式、輸入與規則", "Click any number to see its formula, inputs and rules")} />
-            <div className="px-5 pb-4">
-              {data ? <MetricList metrics={data.metrics} highlight={["maintenance_ratio", "net_pnl", "margin_call_amount"]} /> : <LoadingBlock rows={8} />}
-            </div>
+            <CardHeader title={t("sim.metricsTitle")} desc={L("點一下任一數字可以看公式、輸入與規則", "Click any number to see its formula, inputs and rules")} action={<ExpandToggle open={open.metrics} onClick={() => toggle("metrics")} controls="sim-metrics" />} />
+            {open.metrics ? (
+              <div id="sim-metrics" className="px-5 pb-4">
+                {data ? <MetricList metrics={data.metrics} highlight={["maintenance_ratio", "net_pnl", "margin_call_amount"]} /> : <LoadingBlock rows={8} />}
+              </div>
+            ) : <div className="pb-5" />}
           </Card>
           {data ? (
             <Card>
-              <CardHeader title={t("common.assumptions")} />
-              <ul className="list-disc space-y-1 px-10 pb-5 pt-2 text-[13px] text-ink-2">
-                {data.assumptions.map((a, i) => <li key={i}>{a}</li>)}
-                {data.warnings.map((w) => <li key={w.code} className="text-warning">{w.message}</li>)}
-              </ul>
+              <CardHeader title={t("common.assumptions")} action={<ExpandToggle open={open.assumptions} onClick={() => toggle("assumptions")} controls="sim-assumptions" />} />
+              {/* 警告一律顯示，不收合 */}
+              {open.assumptions || data.warnings.length ? (
+                <ul id="sim-assumptions" className="list-disc space-y-1 px-10 pb-5 pt-2 text-[13px] text-ink-2">
+                  {open.assumptions ? data.assumptions.map((a, i) => <li key={i}>{a}</li>) : null}
+                  {data.warnings.map((w) => <li key={w.code} className="text-warning">{w.message}</li>)}
+                </ul>
+              ) : <div className="pb-5" />}
             </Card>
           ) : null}
         </div>
@@ -264,24 +272,36 @@ export function MarginSimulator() {
           </Card>
           {run ? <RunProgress key={run.run_id} runId={run.run_id} cached={run.cached} /> : null}
           <Card>
-            <CardHeader title={t("sim.rulesUsed")} desc={data?.rules.some((r) => r.review_status === "pending_review") ? t("common.unreviewed") : data?.rules.some((r) => r.review_status === "approved") ? t("common.aiChecked") : undefined} />
-            <ul className="space-y-2 p-5 text-[13px]">
+            <CardHeader title={t("sim.rulesUsed")} desc={data?.rules.some((r) => r.review_status === "pending_review") ? t("common.unreviewed") : data?.rules.some((r) => r.review_status === "approved") ? t("common.aiChecked") : undefined} action={<ExpandToggle open={open.rules} onClick={() => toggle("rules")} controls="sim-rules" count={data?.rules.filter((r) => r.has_official_source).length} />} />
+            {!open.rules ? <div className="pb-5" /> : (
+            <ul id="sim-rules" className="space-y-2 p-5 text-[13px]">
               {data?.rules.filter((r) => r.has_official_source).map((r) => (
                 <li key={r.rule_id} className="flex items-start gap-2">
                   <Info size={14} className="mt-0.5 shrink-0 text-ink-3" aria-hidden />
                   <span className="flex-1">
                     <span className="font-medium text-ink">{r.rule_name}</span>
                     <span className="num ml-1 text-[11px] text-ink-3">{r.rule_id}@{r.version}</span>
-                    <span className="block text-[12px] text-ink-3">{r.citations.map((c) => `${lawTitle(c.source_key, c.official_title, isEn)} ${articleLabel(c.article_number, isEn)}`).join(isEn ? "; " : "、")}</span>
+                    <span className="block text-[12px] text-ink-3">{r.citations.map((c) => `${lawTitle(c.source_key, c.official_title, isEn)} ${articleLabel(c.article_number, isEn)}${amendedDate(c.version) ? (isEn ? ` (last amended ${amendedDate(c.version)})` : `（最新修正 ${amendedDate(c.version)}）`) : ""}`).join(isEn ? "; " : "、")}</span>
                   </span>
                 </li>
               ))}
             </ul>
+            )}
           </Card>
         </div>
       </div>
       <Copilot context={{ trading_type: "margin", input: { asset_label: inp.asset_label, buy_price: inp.buy_price, quantity: inp.quantity, financing_ratio: inp.financing_ratio, current_price: inp.current_price, annual_interest_rate: inp.annual_interest_rate || null, holding_days: Number(inp.holding_days || 0) } }} />
     </div>
+  );
+}
+
+function ExpandToggle({ open, onClick, controls, count }: { open: boolean; onClick: () => void; controls: string; count?: number }) {
+  const L = useL();
+  return (
+    <button type="button" onClick={onClick} aria-expanded={open} aria-controls={controls} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[12px] text-ink-2 hover:bg-surface-muted">
+      {open ? L("收合", "Collapse") : `${L("展開", "Expand")}${count ? ` (${count})` : ""}`}
+      <ChevronDown size={13} className={cn("transition-transform", open && "rotate-180")} aria-hidden />
+    </button>
   );
 }
 

@@ -95,3 +95,16 @@ export function demoSwap(value: string, isEn: boolean) {
   for (const [zh, en] of DEMO_PAIRS) if (value === zh || value === en) return isEn ? en : zh;
   return value;
 }
+
+/**
+ * 法規版本 → 最新修正日期（西元）。全國法規資料庫版本是 LawModifiedDate（20240807）；
+ * 證交所版本取自法規名稱後的民國日期（115.10.16）。無法辨識時回傳 null。
+ */
+export function amendedDate(version: string | null | undefined): string | null {
+  if (!version) return null;
+  const ad = /^(\d{4})(\d{2})(\d{2})$/.exec(version);
+  if (ad) return `${ad[1]}-${ad[2]}-${ad[3]}`;
+  const roc = /^(\d{2,3})\.(\d{1,2})\.(\d{1,2})$/.exec(version);
+  if (roc) return `${Number(roc[1]) + 1911}-${roc[2].padStart(2, "0")}-${roc[3].padStart(2, "0")}`;
+  return null;
+}
