@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 OUT=.tmp/deploy-api
 rm -rf "$OUT" && mkdir -p "$OUT/api" "$OUT/apps/api" "$OUT/data"
 rsync -a --exclude '__pycache__' apps/api/app "$OUT/apps/api/"
-rsync -a data/legal data/rules data/evaluation "$OUT/data/"
+rsync -a data/legal data/rules data/evaluation data/i18n "$OUT/data/"
 cp deploy/api_index.py "$OUT/api/index.py"
 cp deploy/requirements.prod.txt "$OUT/requirements.txt"
 cp deploy/vercel.api.json "$OUT/vercel.json"
