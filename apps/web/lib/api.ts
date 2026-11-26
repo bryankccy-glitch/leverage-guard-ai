@@ -1,6 +1,7 @@
 "use client";
 
-import { useAuth, useUI } from "@/stores/auth";
+import { currentToken, signOut } from "@/lib/supabase";
+import { useUI } from "@/stores/auth";
 
 const isEn = () => useUI.getState().locale === "en";
 
@@ -28,7 +29,7 @@ export class ApiError extends Error {
 type Opts = { method?: string; body?: unknown; form?: FormData; auth?: boolean; signal?: AbortSignal };
 
 export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T> {
-  const token = useAuth.getState().token;
+  const token = opts.auth === false ? null : await currentToken();
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (token && opts.auth !== false) headers.Authorization = `Bearer ${token}`;
@@ -49,7 +50,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
   const data = text ? safeJson(text) : null;
   if (!res.ok) {
     const e = (data as { error?: { code: string; message: string; request_id?: string; details?: unknown } })?.error;
-    if (res.status === 401 && token) useAuth.getState().logout();
+    if (res.status === 401 && token) void signOut();
     throw new ApiError(res.status, e?.code ?? "error", e?.message ?? `HTTP ${res.status}`, e?.request_id, e?.details);
   }
   return data as T;
@@ -64,7 +65,7 @@ function safeJson(t: string): unknown {
 }
 
 export async function download(path: string, filename: string) {
-  const token = useAuth.getState().token;
+  const token = await currentToken();
   const res = await fetch(`${API_URL}/api/v1${path}`, { headers: { "Accept-Language": isEn() ? "en" : "zh-TW", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
   if (!res.ok) throw new ApiError(res.status, "download_failed", isEn() ? "Download failed" : "下載失敗");
   const blob = await res.blob();

@@ -9,6 +9,7 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Annotated, Any
 
 import jwt
@@ -47,13 +48,31 @@ def issue_local_token(user_id: str, email: str, ttl: int = 8 * 3600) -> tuple[st
     return jwt.encode(claims, s.jwt_secret, algorithm="HS256"), ttl
 
 
+@lru_cache(maxsize=4)
+def _jwks_client(url: str) -> jwt.PyJWKClient:
+    """每個程序共用一個；PyJWKClient 會快取公鑰，遇到未知 kid（金鑰輪替）才重新下載。"""
+    return jwt.PyJWKClient(url, cache_keys=True)
+
+
+def _decode_supabase(token: str) -> dict[str, Any]:
+    s = get_settings()
+    opts = {"require": ["exp", "sub"]}
+    alg = jwt.get_unverified_header(token).get("alg")
+    if alg in {"ES256", "RS256"}:  # 新版 Supabase：非對稱簽章，用公開的 JWKS 驗證
+        if not s.supabase_url:
+            raise ApiError(503, "not_configured", "尚未設定 SUPABASE_URL")
+        key = _jwks_client(f"{s.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json").get_signing_key_from_jwt(token)
+        return jwt.decode(token, key.key, algorithms=["ES256", "RS256"], audience="authenticated", options=opts)
+    if alg == "HS256" and s.supabase_jwt_secret:  # 舊版專案：共用密鑰
+        return jwt.decode(token, s.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated", options=opts)
+    raise ApiError(401, "unauthorized", "登入憑證無效")
+
+
 def _decode(token: str) -> dict[str, Any]:
     s = get_settings()
     try:
         if s.auth_mode == "supabase":
-            if not s.supabase_jwt_secret:
-                raise ApiError(503, "not_configured", "尚未設定 SUPABASE_JWT_SECRET")
-            return jwt.decode(token, s.supabase_jwt_secret, algorithms=["HS256"], audience="authenticated")
+            return _decode_supabase(token)
         return jwt.decode(token, s.jwt_secret, algorithms=["HS256"], audience="authenticated",
                           issuer="leverageguard-local")
     except jwt.ExpiredSignatureError as e:

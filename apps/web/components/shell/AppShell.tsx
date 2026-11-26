@@ -17,6 +17,7 @@ import { LogoHorizontal, LogoMark } from "@/components/brand/Logo";
 import { api } from "@/lib/api";
 import { cn, useMounted } from "@/lib/format";
 import { useAuth, useUI } from "@/stores/auth";
+import { signOut } from "@/lib/supabase";
 
 type NavItem = { href: string; key: string; icon: ReactNode; badge?: number | null };
 
@@ -199,7 +200,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const { resolvedTheme, setTheme } = useTheme();
   const locale = useUI((s) => s.locale);
   const setLocale = useUI((s) => s.setLocale);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const rv = useRuleVersion().data;
   const [q, setQ] = useState("");
   const mounted = useMounted();
@@ -262,8 +263,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
                   <DropdownMenu.Item
                     className="flex cursor-pointer items-center gap-2 rounded-[8px] px-3 py-2 text-[14px] text-critical outline-none data-[highlighted]:bg-critical-soft"
                     onSelect={() => {
-                      logout();
-                      router.push("/");
+                      void signOut().then(() => router.push("/"));
                     }}
                   >
                     <LogOut size={14} /> {t("shell.logout")}

@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     auth_mode: str = "local"
     jwt_secret: str = "local-dev-only-change-me-0123456789abcdef"
     supabase_url: str | None = None
-    supabase_jwt_secret: str | None = None
+    supabase_jwt_secret: str | None = None  # 只有舊版 HS256 專案需要；新版（ES256）用 JWKS 公鑰驗證
+    supabase_anon_key: str | None = None  # 公開金鑰，交給前端呼叫 Supabase Auth
     supabase_service_role_key: str | None = None
+    # 帳號登入：使用者輸入帳號（例如 bryan），對應 Supabase Auth 的 bryan@<login_domain>
+    login_domain: str = "leverageguard.local"
 
     # AI：ollama（千問，本機）、gemini（需要金鑰）、none（只用規則與模板）
     llm_provider: str = "ollama"

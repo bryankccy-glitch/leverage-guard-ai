@@ -53,7 +53,10 @@ def auth_config() -> dict:
     return {"mode": s.auth_mode, "demo_mode": s.demo_mode,
             "demo_accounts": [{"email": a["email"], "label": a["display_name"], "role": a["role"]}
                               for a in DEMO_ACCOUNTS] if s.auth_mode == "local" else [],
-            "supabase_url": s.supabase_url if s.auth_mode == "supabase" else None}
+            "supabase_url": s.supabase_url if s.auth_mode == "supabase" else None,
+            # anon key 本來就是公開金鑰（權限由 RLS 與後端控管），前端用它呼叫 Supabase Auth 帳號密碼登入
+            "supabase_anon_key": s.supabase_anon_key if s.auth_mode == "supabase" else None,
+            "login_domain": s.login_domain if s.auth_mode == "supabase" else None}
 
 
 @router.post("/auth/dev/login", tags=["auth"])

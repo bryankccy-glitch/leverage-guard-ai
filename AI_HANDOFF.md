@@ -84,3 +84,24 @@ cd apps/api && .venv/bin/python -m pytest -q
 - 英文模式的 Copilot／法規搜尋仍以中文關鍵字檢索法條，用英文提問的檢索效果較差。
 - 新增中文字串時要同步補 `app/i18n.py`；`test_i18n.py` 會抓出漏翻。
 - 法規英文名稱：前三部依全國法規資料庫英文名稱（未連網再次核對），其餘為本平台翻譯。
+
+## 部署紀錄（2026-11-26 下午，使用者同意部署）
+
+- 內容：main `12a19f3`（英文化＋評審回饋 6 項：申訴頁、拒答示範與客觀風險資訊、版面收合、移除非融資入口、法規最新修正日期、訪客 Copilot）。
+- Vercel 帳號 1（bryankccy-2499）。CLI 登入存在獨立設定 `~/.vercel-leverageguard`（指令要寫成 `vercel --global-config ~/.vercel-leverageguard <子指令>`），不影響 ImportGuard 用的帳號 3 登入。
+- 後端 leverage-guard-api → `leverage-guard-asi5pr8xp`（上一版 `leverage-guard-qe9lv9udt`）；部署包由 `deploy/build_api.sh` 產生，執行後要把 `.tmp/deploy-api/.vercel` 放回。
+- 前端 leverage-guard-ai → `leverage-guard-8402eatkp`（上一版 `leverage-guard-9ik2yxh9f`）。
+- 部署後檢查：health 200、未登入 /simulations 401、英文標籤與規則名稱為英文且數字與中文版相同、訪客拒答附 4 條風險資訊；瀏覽器（訪客）中英文融資頁與申訴頁：無可見中文殘留、選單無當沖／分身／Agent、拒答示範正常、無頁面錯誤。
+- 回復：在 Vercel 後台把兩個專案的上一版 Promote 回 Production。
+- 本機注意：localhost 8810 後端是合併前啟動的舊程序（沒有 --reload），需手動重啟才會載入新版。
+
+## 帳號密碼登入（2026-11-26 下午，Claude；尚未 commit、尚未部署）
+
+目的：正式站原本是 AUTH_MODE=local（任何人可一鍵登入示範管理員）。改成跟 ImportGuard 一樣用「帳號＋密碼」：帳號 `bryan` 對應 Supabase Auth 的 `bryan@leverageguard.local`。
+
+- 後端：`security/auth.py` 支援新版 Supabase ES256（JWKS 公鑰驗證，`_jwks_client` 快取）；HS256 只在有 `SUPABASE_JWT_SECRET` 時接受。`/auth/config` 在 supabase 模式回傳 `supabase_anon_key`、`login_domain`。`pyjwt[crypto]`（requirements.txt 與 deploy/requirements.prod.txt）。
+- 前端：`lib/supabase.ts`（設定只抓一次、client 單例、憑證自動續期並同步到 useAuth、登出一起清 Supabase）；`api.ts` 呼叫前取最新憑證；登入頁 supabase 模式為帳號密碼表單；註冊頁顯示「不開放自行註冊」。
+- 建帳號：`python3 scripts/create_user.py`，service_role key 與密碼都由使用者執行時自己輸入（AI 不經手密碼）。第一次登入自動建 profile，角色 investor。
+- 驗證：後端 pytest 71 passed（新增 tests/test_supabase_auth.py 5 項）、Ruff PASS；前端 tsc、ESLint PASS、next build PASS；本機 supabase 模式：登入頁只剩帳號密碼、示範登入 404、未登入 /admin/users 401、假憑證 401、訪客 Copilot 拒答＋風險資訊正常。
+- NOT RUN：實際用 Supabase 帳號登入（需要使用者先建帳號）。
+- 上線要設的環境變數（API 專案）：AUTH_MODE=supabase、SUPABASE_URL、SUPABASE_ANON_KEY；然後重新部署 API 與前端。切換後示範帳號（含示範管理員）全部失效，管理員帳號需另外把 profiles.role 改成 system_admin。
