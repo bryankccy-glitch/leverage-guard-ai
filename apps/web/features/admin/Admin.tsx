@@ -5,6 +5,7 @@ import { Activity, BookOpenText, Bot, ClipboardCheck, Database, FileClock, Flask
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
+import { demoSwap, useIsEn, useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Input, LoadingBlock, Notice, SuccessNote } from "@/components/ui";
 import { api } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
@@ -20,24 +21,26 @@ function useAdminGuard(roles: string[] = ["legal_reviewer", "system_admin"]) {
 
 function Guard({ roles, children }: { roles?: string[]; children: ReactNode }) {
   const t = useTranslations("admin");
+  const L = useL();
   const ok = useAdminGuard(roles);
-  if (!ok) return <Card><EmptyState title={t("onlyReviewer")} desc="權限由後端與資料庫 RLS 強制執行；這裡只是提示。" action={<Link href="/login" className="text-blue underline">切換帳號</Link>} /></Card>;
+  if (!ok) return <Card><EmptyState title={t("onlyReviewer")} desc={L("權限由後端與資料庫 RLS 強制執行；這裡只是提示。", "Permissions are enforced by the backend and database RLS; this is only a hint.")} action={<Link href="/login" className="text-blue underline">{L("切換帳號", "Switch account")}</Link>} /></Card>;
   return <>{children}</>;
 }
 
 export function AdminHome() {
   const t = useTranslations("admin");
+  const L = useL();
   const items: [string, string, ReactNode, string][] = [
-    ["/admin/review-queue", t("reviewQueue"), <ClipboardCheck key="i" size={20} />, "核准、啟用或退回規則版本與法規更新"],
-    ["/admin/legal-rules", t("rules"), <Layers3 key="i" size={20} />, "Regulation-as-Code 規則與官方引用"],
-    ["/admin/rule-versions", t("ruleVersions"), <FileClock key="i" size={20} />, "所有版本、生效期間與審查狀態"],
-    ["/admin/legal-sources", t("sources"), <BookOpenText key="i" size={20} />, "官方資料來源與同步"],
-    ["/admin/knowledge-base", t("knowledge"), <Database key="i" size={20} />, "條文、段落與向量索引"],
-    ["/admin/agent-config", t("agentConfig"), <Bot key="i" size={20} />, "模型、限制與工具白名單"],
-    ["/admin/evaluation", t("evaluation"), <FlaskConical key="i" size={20} />, "金融與法律正確性評估"],
-    ["/admin/system-health", t("health"), <Activity key="i" size={20} />, "資料庫、模型與工作狀態"],
-    ["/admin/audit-logs", t("audit"), <ScrollText key="i" size={20} />, "所有重要操作的稽核紀錄"],
-    ["/admin/users", t("users"), <Users key="i" size={20} />, "帳號與角色"],
+    ["/admin/review-queue", t("reviewQueue"), <ClipboardCheck key="i" size={20} />, L("核准、啟用或退回規則版本與法規更新", "Approve, activate or return rule versions and regulatory updates")],
+    ["/admin/legal-rules", t("rules"), <Layers3 key="i" size={20} />, L("Regulation-as-Code 規則與官方引用", "Regulation-as-Code rules and official citations")],
+    ["/admin/rule-versions", t("ruleVersions"), <FileClock key="i" size={20} />, L("所有版本、生效期間與審查狀態", "All versions, effective periods and review status")],
+    ["/admin/legal-sources", t("sources"), <BookOpenText key="i" size={20} />, L("官方資料來源與同步", "Official data sources and sync")],
+    ["/admin/knowledge-base", t("knowledge"), <Database key="i" size={20} />, L("條文、段落與向量索引", "Articles, chunks and vector index")],
+    ["/admin/agent-config", t("agentConfig"), <Bot key="i" size={20} />, L("模型、限制與工具白名單", "Models, limits and tool allowlist")],
+    ["/admin/evaluation", t("evaluation"), <FlaskConical key="i" size={20} />, L("金融與法律正確性評估", "Financial and legal accuracy evaluation")],
+    ["/admin/system-health", t("health"), <Activity key="i" size={20} />, L("資料庫、模型與工作狀態", "Database, model and job status")],
+    ["/admin/audit-logs", t("audit"), <ScrollText key="i" size={20} />, L("所有重要操作的稽核紀錄", "Audit log of all important actions")],
+    ["/admin/users", t("users"), <Users key="i" size={20} />, L("帳號與角色", "Accounts and roles")],
   ];
   return (
     <Guard>
@@ -57,6 +60,8 @@ type QueueRule = { rule_id: string; version: string; rule_name: string; review_s
 
 export function ReviewQueue() {
   const t = useTranslations("admin");
+  const L = useL();
+  const isEn = useIsEn();
   const qc = useQueryClient();
   const allowed = useAdminGuard();
   const q = useQuery({ queryKey: ["review-queue"], enabled: allowed, queryFn: () => api<{ rules: QueueRule[]; regulatory_updates: { id: string; title: string; is_demo: boolean; review_status: string }[] }>("/admin/review-queue") });
@@ -70,18 +75,18 @@ export function ReviewQueue() {
   return (
     <Guard>
       <div className="space-y-5">
-        <Notice tone="warning">核准規則前，請逐字核對官方條文、適用條件與參數。核准紀錄會寫入審查與稽核紀錄；虛構示範規則無法啟用。</Notice>
+        <Notice tone="warning">{L("核准規則前，請逐字核對官方條文、適用條件與參數。核准紀錄會寫入審查與稽核紀錄；虛構示範規則無法啟用。", "Before approving a rule, check the official text, conditions and parameters word for word. Approvals are written to the review and audit logs; fictional demo rules cannot be activated.")}</Notice>
         {review.error ? <ErrorState error={review.error} /> : null}
-        {review.isSuccess ? <SuccessNote>已更新審查狀態</SuccessNote> : null}
+        {review.isSuccess ? <SuccessNote>{L("已更新審查狀態", "Review status updated")}</SuccessNote> : null}
         {q.isLoading ? <Card><LoadingBlock rows={6} /></Card> : q.error ? <Card><ErrorState error={q.error} /></Card> : (
           <>
             <Card>
-              <CardHeader title="法規更新" />
+              <CardHeader title={L("法規更新", "Regulatory updates")} />
               <ul className="divide-y divide-line px-5">
-                {q.data!.regulatory_updates.length === 0 ? <li className="py-3 text-[13px] text-ink-3">沒有待審查的更新</li> : q.data!.regulatory_updates.map((u) => (
+                {q.data!.regulatory_updates.length === 0 ? <li className="py-3 text-[13px] text-ink-3">{L("沒有待審查的更新", "No updates awaiting review")}</li> : q.data!.regulatory_updates.map((u) => (
                   <li key={u.id} className="flex flex-wrap items-center gap-2 py-3">
-                    <Link href={`/regulatory-monitor/updates?id=${u.id}`} className="flex-1 text-ink hover:text-brand">{u.title}</Link>
-                    {u.is_demo ? <Badge tone="warning">示範</Badge> : null}
+                    <Link href={`/regulatory-monitor/updates?id=${u.id}`} className="flex-1 text-ink hover:text-brand">{demoSwap(u.title, isEn)}</Link>
+                    {u.is_demo ? <Badge tone="warning">{L("示範", "Demo")}</Badge> : null}
                     <Button size="sm" variant="secondary" onClick={() => upd.mutate({ id: u.id, decision: "approve" })}>{t("approve")}</Button>
                     <Button size="sm" variant="ghost" onClick={() => upd.mutate({ id: u.id, decision: "reject" })}>{t("reject")}</Button>
                   </li>
@@ -98,11 +103,11 @@ export function ReviewQueue() {
                         <span className="font-semibold text-ink">{r.rule_name}</span>
                         <span className="num text-[12px] text-ink-3">{key}</span>
                         <Badge tone={r.review_status === "approved" ? "normal" : "unknown"}>{r.review_status}</Badge>
-                        {r.is_demo ? <Badge tone="warning">示範</Badge> : null}
-                        {!r.has_official_source ? <Badge tone="warning">無官方來源</Badge> : <Badge tone={r.citation_validated ? "normal" : "critical"}>{r.citation_validated ? "引用已驗證" : "引用失敗"}</Badge>}
+                        {r.is_demo ? <Badge tone="warning">{L("示範", "Demo")}</Badge> : null}
+                        {!r.has_official_source ? <Badge tone="warning">{L("無官方來源", "No official source")}</Badge> : <Badge tone={r.citation_validated ? "normal" : "critical"}>{r.citation_validated ? L("引用已驗證", "Citation verified") : L("引用失敗", "Citation failed")}</Badge>}
                       </div>
                       <p className="mt-1 text-[13px] text-ink-2">{r.plain_language}</p>
-                      {Object.keys(r.parameters).length ? <p className="num mt-1 text-[12px] text-ink-3">參數：{JSON.stringify(r.parameters)}</p> : null}
+                      {Object.keys(r.parameters).length ? <p className="num mt-1 text-[12px] text-ink-3">{L("參數：", "Parameters: ")}{JSON.stringify(r.parameters)}</p> : null}
                       <ul className="mt-2 space-y-1.5">{r.citations.map((c, i) => <CitationItem key={i} c={c} />)}</ul>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Input aria-label={t("notes")} placeholder={t("notes")} value={notes[key] ?? ""} onChange={(e) => setNotes({ ...notes, [key]: e.target.value })} className="h-9 max-w-md" />
@@ -125,23 +130,24 @@ export function ReviewQueue() {
 type RuleRow = { rule_id: string; rule_name: string; rule_type: string; trading_type: string; versions: { version: string; review_status: string; is_demo: boolean; effective_from: string | null; effective_to: string | null; citation_validated: boolean; has_official_source: boolean }[] };
 
 export function RulesTable({ versionsOnly }: { versionsOnly?: boolean }) {
+  const L = useL();
   const q = useQuery({ queryKey: ["rules-all"], queryFn: () => api<{ items: RuleRow[] }>("/rules", { auth: false }) });
   if (q.isLoading) return <Card><LoadingBlock rows={6} /></Card>;
   if (q.error) return <Card><ErrorState error={q.error} /></Card>;
   return (
     <Card className="overflow-x-auto">
       <table className="w-full min-w-[820px] text-[13px]">
-        <thead><tr className="border-b border-line text-left text-ink-3"><th className="p-3">規則</th><th>類型</th><th>交易</th><th>版本</th><th>生效期間</th><th>狀態</th><th className="p-3">引用</th></tr></thead>
+        <thead><tr className="border-b border-line text-left text-ink-3"><th className="p-3">{L("規則", "Rule")}</th><th>{L("類型", "Type")}</th><th>{L("交易", "Trading")}</th><th>{L("版本", "Version")}</th><th>{L("生效期間", "Effective period")}</th><th>{L("狀態", "Status")}</th><th className="p-3">{L("引用", "Citations")}</th></tr></thead>
         <tbody>
           {q.data!.items.flatMap((r) => r.versions.map((v, i) => (
             <tr key={`${r.rule_id}@${v.version}`} className="border-b border-line">
               <td className="p-3">{i === 0 || versionsOnly ? <><p className="font-medium text-ink">{r.rule_name}</p><p className="num text-[11px] text-ink-3">{r.rule_id}</p></> : null}</td>
               <td className="text-ink-2">{r.rule_type}</td>
               <td className="text-ink-2">{r.trading_type}</td>
-              <td className="num">{v.version}{v.is_demo ? <Badge tone="warning" className="ml-1">示範</Badge> : null}</td>
+              <td className="num">{v.version}{v.is_demo ? <Badge tone="warning" className="ml-1">{L("示範", "Demo")}</Badge> : null}</td>
               <td className="num text-ink-2">{v.effective_from ?? "—"} ～ {v.effective_to ?? "—"}</td>
               <td><Badge tone={v.review_status === "active" ? "normal" : v.review_status === "approved" ? "blue" : "unknown"}>{v.review_status}</Badge></td>
-              <td className="p-3">{v.has_official_source ? <Badge tone={v.citation_validated ? "normal" : "critical"}>{v.citation_validated ? "已驗證" : "失敗"}</Badge> : <Badge tone="warning">待查證</Badge>}</td>
+              <td className="p-3">{v.has_official_source ? <Badge tone={v.citation_validated ? "normal" : "critical"}>{v.citation_validated ? L("已驗證", "Verified") : L("失敗", "Failed")}</Badge> : <Badge tone="warning">{L("待查證", "Unverified")}</Badge>}</td>
             </tr>
           )))}
         </tbody>
@@ -151,6 +157,7 @@ export function RulesTable({ versionsOnly }: { versionsOnly?: boolean }) {
 }
 
 export function LegalSources() {
+  const L = useL();
   const qc = useQueryClient();
   const docs = useQuery({ queryKey: ["legal-docs"], queryFn: () => api<{ items: Parameters<typeof DocList>[0]["docs"] }>("/legal/documents", { auth: false }) });
   const sync = useMutation({ mutationFn: () => api<{ fetched_from_official_sources: boolean; created: string[]; unchanged: number; note: string | null }>("/admin/legal-sources/sync", { method: "POST" }), onSuccess: () => qc.invalidateQueries() });
@@ -158,9 +165,9 @@ export function LegalSources() {
     <Guard roles={["system_admin", "legal_reviewer"]}>
       <div className="space-y-4">
         <Card className="p-5">
-          <Button onClick={() => sync.mutate()} disabled={sync.isPending}>比對官方資料版本</Button>
+          <Button onClick={() => sync.mutate()} disabled={sync.isPending}>{L("比對官方資料版本", "Compare official data versions")}</Button>
           {sync.error ? <ErrorState error={sync.error} /> : null}
-          {sync.data ? <Notice tone="blue" title="比對結果">新偵測 {sync.data.created.length} 份變動、{sync.data.unchanged} 份未變動。{sync.data.note}</Notice> : null}
+          {sync.data ? <Notice tone="blue" title={L("比對結果", "Comparison result")}>{L(`新偵測 ${sync.data.created.length} 份變動、${sync.data.unchanged} 份未變動。`, `${sync.data.created.length} new change(s) detected, ${sync.data.unchanged} unchanged. `)}{sync.data.note}</Notice> : null}
         </Card>
         <Card>{docs.isLoading ? <LoadingBlock /> : docs.data ? <DocList docs={docs.data.items} /> : null}</Card>
       </div>
@@ -168,30 +175,32 @@ export function LegalSources() {
   );
 }
 
-function JsonCard({ path, title, roles }: { path: string; title: string; roles?: string[] }) {
+function JsonCard({ path, title, titleEn, roles }: { path: string; title: string; titleEn: string; roles?: string[] }) {
+  const L = useL();
   const allowed = useAdminGuard(roles);
   const q = useQuery({ queryKey: ["admin-json", path], enabled: allowed, queryFn: () => api<unknown>(path) });
   return (
     <Guard roles={roles}>
       <Card>
-        <CardHeader title={title} />
+        <CardHeader title={L(title, titleEn)} />
         {q.isLoading ? <LoadingBlock /> : q.error ? <ErrorState error={q.error} /> : <pre className="max-h-[620px] overflow-auto p-5 text-[12px] text-ink-2">{JSON.stringify(q.data, null, 2)}</pre>}
       </Card>
     </Guard>
   );
 }
 
-export const KnowledgeBase = () => <JsonCard path="/admin/knowledge-base" title="知識庫" />;
-export const AgentConfig = () => <JsonCard path="/admin/agent-config" title="Agent 設定" roles={["system_admin"]} />;
-export const SystemHealth = () => <JsonCard path="/admin/system-health" title="系統健康" roles={["system_admin"]} />;
+export const KnowledgeBase = () => <JsonCard path="/admin/knowledge-base" title="知識庫" titleEn="Knowledge base" />;
+export const AgentConfig = () => <JsonCard path="/admin/agent-config" title="Agent 設定" titleEn="Agent settings" roles={["system_admin"]} />;
+export const SystemHealth = () => <JsonCard path="/admin/system-health" title="系統健康" titleEn="System health" roles={["system_admin"]} />;
 
 export function Evaluation() {
+  const L = useL();
   const allowed = useAdminGuard();
   const q = useQuery({ queryKey: ["evaluation"], enabled: allowed, queryFn: () => api<Record<string, unknown>>("/admin/evaluation") });
   return (
     <Guard>
       <div className="space-y-4">
-        <Notice tone="warning">評估結果由 scripts/run_evaluation.py 實際執行產生；沒有執行就顯示 NOT RUN。法律正確性仍需具金融法律知識的人員審查，AI 自評不能當作唯一證明。</Notice>
+        <Notice tone="warning">{L("評估結果由 scripts/run_evaluation.py 實際執行產生；沒有執行就顯示 NOT RUN。法律正確性仍需具金融法律知識的人員審查，AI 自評不能當作唯一證明。", "Evaluation results come from actually running scripts/run_evaluation.py; if it has not run, NOT RUN is shown. Legal accuracy still needs review by someone with financial-law knowledge; AI self-assessment cannot be the only proof.")}</Notice>
         <Card>{q.isLoading ? <LoadingBlock /> : q.error ? <ErrorState error={q.error} /> : <pre className="max-h-[640px] overflow-auto p-5 text-[12px] text-ink-2">{JSON.stringify(q.data, null, 2)}</pre>}</Card>
       </div>
     </Guard>
@@ -199,6 +208,7 @@ export function Evaluation() {
 }
 
 export function AuditLogs() {
+  const L = useL();
   const locale = useLocale();
   const allowed = useAdminGuard(["system_admin"]);
   const q = useQuery({ queryKey: ["audit"], enabled: allowed, queryFn: () => api<{ items: { id: string; actor_id: string | null; actor_type: string; action: string; resource_type: string; resource_id: string | null; metadata: unknown; request_id: string | null; created_at: string }[] }>("/admin/audit-logs") });
@@ -208,7 +218,7 @@ export function AuditLogs() {
       <Card className="overflow-x-auto">
         {q.isLoading ? <LoadingBlock /> : q.error ? <ErrorState error={q.error} /> : (
           <table className="w-full min-w-[820px] text-[12.5px]">
-            <thead><tr className="border-b border-line text-left text-ink-3"><th className="p-3">時間</th><th>動作</th><th>資源</th><th>操作者</th><th className="p-3">Request ID</th></tr></thead>
+            <thead><tr className="border-b border-line text-left text-ink-3"><th className="p-3">{L("時間", "Time")}</th><th>{L("動作", "Action")}</th><th>{L("資源", "Resource")}</th><th>{L("操作者", "Actor")}</th><th className="p-3">Request ID</th></tr></thead>
             <tbody>{q.data!.items.map((a) => (
               <tr key={a.id} className="border-b border-line"><td className="num p-3 text-ink-2">{fmtDate(a.created_at, locale, true)}</td><td className="font-medium text-ink">{a.action}</td><td className="num text-ink-2">{a.resource_type}:{a.resource_id?.slice(0, 8) ?? "—"}</td><td className="num text-ink-2">{a.actor_type}:{a.actor_id?.slice(0, 8) ?? "—"}</td><td className="num p-3 text-ink-3">{a.request_id?.slice(0, 12) ?? "—"}</td></tr>
             ))}</tbody>

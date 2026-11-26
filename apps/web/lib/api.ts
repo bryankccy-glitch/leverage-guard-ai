@@ -1,6 +1,8 @@
 "use client";
 
-import { useAuth } from "@/stores/auth";
+import { useAuth, useUI } from "@/stores/auth";
+
+const isEn = () => useUI.getState().locale === "en";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8810";
 
@@ -30,6 +32,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (token && opts.auth !== false) headers.Authorization = `Bearer ${token}`;
+  headers["Accept-Language"] = isEn() ? "en" : "zh-TW";
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/v1${path}`, {
@@ -39,7 +42,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
       signal: opts.signal,
     });
   } catch {
-    throw new ApiError(0, "network_error", "無法連線到後端服務，請確認 API 已啟動");
+    throw new ApiError(0, "network_error", isEn() ? "Cannot reach the backend service. Please check that the API is running." : "無法連線到後端服務，請確認 API 已啟動");
   }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
@@ -62,8 +65,8 @@ function safeJson(t: string): unknown {
 
 export async function download(path: string, filename: string) {
   const token = useAuth.getState().token;
-  const res = await fetch(`${API_URL}/api/v1${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  if (!res.ok) throw new ApiError(res.status, "download_failed", "下載失敗");
+  const res = await fetch(`${API_URL}/api/v1${path}`, { headers: { "Accept-Language": isEn() ? "en" : "zh-TW", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+  if (!res.ok) throw new ApiError(res.status, "download_failed", isEn() ? "Download failed" : "下載失敗");
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

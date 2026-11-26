@@ -6,6 +6,7 @@ import { ArrowRight, Bot, Calculator, CheckCircle2, FileSearch, Gavel, Layers3, 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
+import { useL } from "@/lib/i18n";
 import { LinkButton } from "@/components/ui";
 import { cn, fmtMoney, fmtNum } from "@/lib/format";
 import { marginPreview } from "@/lib/margin-preview";
@@ -114,24 +115,25 @@ export function Landing() {
 
 function HeroPreview() {
   const t = useTranslations("landing");
+  const L = useL();
   const locale = useLocale();
   const [price, setPrice] = useState(100);
   const p = marginPreview({ buyPrice: "100", quantity: "1000", financingRatio: "0.6", currentPrice: String(price), threshold: "1.30" });
   const ratio = p?.ratioPct ? Number(p.ratioPct) : 0;
   const events = [
-    { key: "open", label: "建立融資部位（自備 40,000、融資 60,000）", on: true },
-    { key: "breach", label: "維持率低於 130%：符合補繳通知條件", on: ratio < 130 },
-    { key: "deadline", label: "通知送達後 2 個營業日內補繳差額", on: ratio < 130 },
-    { key: "debt", label: "市值低於借款：處分後可能仍有剩餘債務", on: ratio < 100 },
+    { key: "open", label: L("建立融資部位（自備 40,000、融資 60,000）", "Open a margin position (own funds 40,000, loan 60,000)"), on: true },
+    { key: "breach", label: L("維持率低於 130%：符合補繳通知條件", "Ratio below 130%: meets top-up notice conditions"), on: ratio < 130 },
+    { key: "deadline", label: L("通知送達後 2 個營業日內補繳差額", "Top up within 2 business days of notice delivery"), on: ratio < 130 },
+    { key: "debt", label: L("市值低於借款：處分後可能仍有剩餘債務", "Market value below the loan: debt may remain after disposal"), on: ratio < 100 },
   ];
   const explain =
     ratio >= 166
-      ? "股價還在買進價附近，維持率約 166%。這不代表安全：融資讓每 1 元的跌幅，對本金的影響放大約 2.5 倍。"
+      ? L("股價還在買進價附近，維持率約 166%。這不代表安全：融資讓每 1 元的跌幅，對本金的影響放大約 2.5 倍。", "The price is still near the buy price, so the ratio is about 166%. That does not mean safe: margin magnifies each 1-dollar drop about 2.5 times against your principal.")
       : ratio >= 130
-        ? `本金已虧損 ${fmtMoney(String(-Number(p?.grossPnl ?? 0)), locale)}，但維持率仍高於 130%，還沒有符合追繳條件。`
+        ? L(`本金已虧損 ${fmtMoney(String(-Number(p?.grossPnl ?? 0)), locale)}，但維持率仍高於 130%，還沒有符合追繳條件。`, `You have lost ${fmtMoney(String(-Number(p?.grossPnl ?? 0)), locale)} of principal, but the ratio is still above 130%, so margin call conditions are not met yet.`)
         : ratio >= 100
-          ? `維持率 ${p?.ratioPct}% 已低於 130%：券商應通知你補繳差額，估計約 ${fmtMoney(p?.callAmount, locale)}（依第 54 條公式）。`
-          : `市值已低於融資借款。即使擔保品全部賣出，也不足以清償，差額仍需補足——本金虧完不代表債務結束。`;
+          ? L(`維持率 ${p?.ratioPct}% 已低於 130%：券商應通知你補繳差額，估計約 ${fmtMoney(p?.callAmount, locale)}（依第 54 條公式）。`, `The ratio of ${p?.ratioPct}% is below 130%: the broker should notify you to top up, an estimated ${fmtMoney(p?.callAmount, locale)} (Art. 54 formula).`)
+          : L(`市值已低於融資借款。即使擔保品全部賣出，也不足以清償，差額仍需補足——本金虧完不代表債務結束。`, `Market value is below the margin loan. Even selling all collateral would not repay it, and you must still cover the difference: losing your principal does not end the debt.`);
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} id="preview" className="rounded-[16px] border border-line bg-surface p-5 shadow-card">
       <div className="flex items-center justify-between">
@@ -142,9 +144,9 @@ function HeroPreview() {
         <span className="rounded-full bg-blue-soft px-2.5 py-0.5 text-[11px] font-medium text-blue">Simulation</span>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <Stat label="擔保維持率" value={`${p?.ratioPct ?? "—"}%`} tone={ratio < 130 ? "critical" : undefined} />
-        <Stat label="未計費用損益" value={fmtMoney(p?.grossPnl, locale)} tone={Number(p?.grossPnl) < 0 ? "critical" : undefined} />
-        <Stat label="帳戶淨值" value={fmtMoney(p?.equity, locale)} tone={Number(p?.equity) < 0 ? "critical" : undefined} />
+        <Stat label={L("擔保維持率", "Maintenance ratio")} value={`${p?.ratioPct ?? "—"}%`} tone={ratio < 130 ? "critical" : undefined} />
+        <Stat label={L("未計費用損益", "P&L before costs")} value={fmtMoney(p?.grossPnl, locale)} tone={Number(p?.grossPnl) < 0 ? "critical" : undefined} />
+        <Stat label={L("帳戶淨值", "Account equity")} value={fmtMoney(p?.equity, locale)} tone={Number(p?.equity) < 0 ? "critical" : undefined} />
       </div>
       <div className="mt-4">
         <div className="mb-1 flex items-baseline justify-between">
@@ -157,17 +159,17 @@ function HeroPreview() {
         </Slider.Root>
         <RatioBar ratio={ratio} />
       </div>
-      <ol className="mt-4 space-y-2" aria-label="法律事件">
+      <ol className="mt-4 space-y-2" aria-label={L("法律事件", "Legal events")}>
         {events.map((e) => (
           <li key={e.key} className={cn("flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] transition-colors", e.on ? (e.key === "open" ? "border-line text-ink" : "border-critical/40 bg-critical-soft text-ink") : "border-dashed border-line text-ink-3")}>
             {e.on ? <Gavel size={14} className={e.key === "open" ? "text-brand" : "text-critical"} aria-hidden /> : <Scale size={14} aria-hidden />}
             <span className="flex-1">{e.label}</span>
-            <span className="text-[11px]">{e.on ? (e.key === "open" ? "已建立" : "模擬中觸發") : "未觸發"}</span>
+            <span className="text-[11px]">{e.on ? (e.key === "open" ? L("已建立", "Opened") : L("模擬中觸發", "Triggered in simulation")) : L("未觸發", "Not triggered")}</span>
           </li>
         ))}
       </ol>
       <p className="mt-3 rounded-[10px] bg-brand-soft px-3 py-2 text-[13px] text-ink" aria-live="polite">{explain}</p>
-      <p className="mt-2 text-[11px] text-ink-3">示範以前端 Decimal.js 即時試算；完整模擬由後端引擎計算並附官方條文。</p>
+      <p className="mt-2 text-[11px] text-ink-3">{L("示範以前端 Decimal.js 即時試算；完整模擬由後端引擎計算並附官方條文。", "This demo calculates live in the browser with Decimal.js; full simulations run on the backend engine with official legal text attached.")}</p>
     </motion.div>
   );
 }

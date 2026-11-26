@@ -5,16 +5,18 @@ import { CheckCircle2, CircleDashed, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { useL } from "@/lib/i18n";
 import { Badge, Card, CardHeader, ErrorState, Notice } from "@/components/ui";
 import { API_URL, api } from "@/lib/api";
 import { cn } from "@/lib/format";
-import { useAuth } from "@/stores/auth";
+import { useAuth, useUI } from "@/stores/auth";
 
 export type AgentEvent = { seq: number; agent_name: string; status: string; message: string; created_at: string };
 
 /** 用 fetch 讀取 SSE（EventSource 不能帶 Authorization 標頭）。事件都是後端寫入的真實執行紀錄。 */
 export function useRunEvents(runId: string | null) {
   const token = useAuth((s) => s.token);
+  const locale = useUI((s) => s.locale);
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [done, setDone] = useState<string | null>(null);
   useEffect(() => {
@@ -22,7 +24,7 @@ export function useRunEvents(runId: string | null) {
     const ctrl = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/agents/runs/${runId}/events`, { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal });
+        const res = await fetch(`${API_URL}/api/v1/agents/runs/${runId}/events`, { headers: { Authorization: `Bearer ${token}`, "Accept-Language": locale === "en" ? "en" : "zh-TW" }, signal: ctrl.signal });
         const reader = res.body?.getReader();
         if (!reader) return;
         const dec = new TextDecoder();
@@ -46,8 +48,11 @@ export function useRunEvents(runId: string | null) {
         /* 中斷或離開頁面 */
       }
     })();
-    return () => ctrl.abort();
-  }, [runId, token]);
+    return () => {
+      ctrl.abort();
+      setEvents([]);
+    };
+  }, [runId, token, locale]);
   return { events, done };
 }
 
@@ -133,16 +138,17 @@ export type RunOutputData = {
 
 function RunOutput({ output }: { output: RunOutputData }) {
   const tc = useTranslations("common");
+  const L = useL();
   const ai = output.explanation_provider !== "template";
   return (
     <div className="space-y-3 border-t border-line p-5 text-[14px]">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={ai ? "brand" : "unknown"}>{ai ? `AI：${output.explanation_provider} ${output.explanation_model ?? ""}` : "規則模板（未使用生成式 AI）"}</Badge>
+        <Badge tone={ai ? "brand" : "unknown"}>{ai ? `AI${L("：", ": ")}${output.explanation_provider} ${output.explanation_model ?? ""}` : L("規則模板（未使用生成式 AI）", "Rule template (no generative AI used)")}</Badge>
         <Badge tone={output.review.passed ? "normal" : "warning"}>Review {output.review.passed ? "passed" : "fallback"}</Badge>
-        <Badge tone={output.verification.citations_failed === 0 ? "normal" : "critical"}>引用 {output.verification.citations_total} / 失敗 {output.verification.citations_failed}</Badge>
-        <Badge tone={output.verification.metrics_unchanged ? "normal" : "critical"}>數字未被 AI 修改：{output.verification.metrics_unchanged ? tc("yes") : tc("no")}</Badge>
+        <Badge tone={output.verification.citations_failed === 0 ? "normal" : "critical"}>{L("引用", "Citations")} {output.verification.citations_total} / {L("失敗", "failed")} {output.verification.citations_failed}</Badge>
+        <Badge tone={output.verification.metrics_unchanged ? "normal" : "critical"}>{L("數字未被 AI 修改：", "Numbers unchanged by AI: ")}{output.verification.metrics_unchanged ? tc("yes") : tc("no")}</Badge>
       </div>
-      {ai ? <p className="text-[12px] text-ink-3">AI 白話說明僅供理解參考；正式數字與法律依據以計算結果與官方條文為準。</p> : null}
+      {ai ? <p className="text-[12px] text-ink-3">{L("AI 白話說明僅供理解參考；正式數字與法律依據以計算結果與官方條文為準。", "The AI plain-language explanation is for understanding only; the calculation results and official legal text are authoritative.")}</p> : null}
       <p className="text-ink">{output.summary}</p>
       <p className="rounded-[8px] bg-surface-muted p-3 text-ink-2">{output.financial_explanation.summary}</p>
       <ul className="space-y-2">
@@ -154,7 +160,7 @@ function RunOutput({ output }: { output: RunOutputData }) {
         ))}
       </ul>
       {output.uncertainties.length ? (
-        <Notice tone="warning" title="尚待確認">
+        <Notice tone="warning" title={L("尚待確認", "Still to be confirmed")}>
           <ul className="list-disc pl-5">{output.uncertainties.map((u, i) => <li key={i}>{u}</li>)}</ul>
         </Notice>
       ) : null}

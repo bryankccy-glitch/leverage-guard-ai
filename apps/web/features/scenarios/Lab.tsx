@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, LoadingBlock, Notice, NumberField, Select, SimBadge, SuccessNote } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtDate, fmtMoney, fmtNum } from "@/lib/format";
@@ -161,6 +162,7 @@ export function ScenarioBuilder() {
 /** 情境播放：Play／Pause／Step／Reset。每一步的財務狀態與事件都來自後端推演結果。 */
 export function ScenarioPlayer({ result }: { result: ScenarioResult }) {
   const t = useTranslations();
+  const L = useL();
   const locale = useLocale();
   const maxStep = Math.max(...result.timeline.map((n) => n.step), 0);
   // 換一個推演結果時，父層以 key 重建元件，step 自然回到最後一步
@@ -221,7 +223,7 @@ export function ScenarioPlayer({ result }: { result: ScenarioResult }) {
       ) : null}
       {disposal && step >= maxStep ? (
         <Card>
-          <CardHeader title={t("timeline.status.triggered_in_simulation") + "：擔保品處分結算"} />
+          <CardHeader title={t("timeline.status.triggered_in_simulation") + L("：擔保品處分結算", ": collateral disposal settlement")} />
           <div className="px-5 pb-4"><MetricList metrics={disposal} highlight={["remaining_debt", "surplus_returned"]} /></div>
         </Card>
       ) : null}
@@ -253,6 +255,7 @@ type SimDetail = { id: string; scenario_name: string; scenario_type: string; inp
 
 export function ScenarioDetail({ id }: { id: string }) {
   const t = useTranslations();
+  const L = useL();
   const locale = useLocale();
   const q = useQuery({ queryKey: ["simulation", id], queryFn: () => api<SimDetail>(`/simulations/${id}`) });
   const recalc = useMutation({ mutationFn: () => api(`/simulations/${id}/calculate`, { method: "POST" }), onSuccess: () => q.refetch() });
@@ -278,14 +281,14 @@ export function ScenarioDetail({ id }: { id: string }) {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-[26px] font-bold text-ink">{s.scenario_name}</h1>
-          <p className="num text-[13px] text-ink-3">{t("common.ruleVersion")} {s.rule_version_label ?? "—"} · {s.results.length} 次計算紀錄 {s.is_demo ? "· 示範情境" : ""}</p>
+          <p className="num text-[13px] text-ink-3">{t("common.ruleVersion")} {s.rule_version_label ?? "—"} · {L(`${s.results.length} 次計算紀錄`, `${s.results.length} calculation record(s)`)} {s.is_demo ? L("· 示範情境", "· Demo scenario") : ""}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => recalc.mutate()} disabled={recalc.isPending}><RotateCcw size={14} />以目前規則重新計算</Button>
+          <Button variant="secondary" onClick={() => recalc.mutate()} disabled={recalc.isPending}><RotateCcw size={14} />{L("以目前規則重新計算", "Recalculate with current rules")}</Button>
           <Button onClick={() => explain.mutate()} disabled={explain.isPending}><Sparkles size={15} />{t("sim.analyze")}</Button>
         </div>
       </div>
-      {recalc.isSuccess ? <SuccessNote>已新增一筆計算紀錄；舊紀錄保留不變。</SuccessNote> : null}
+      {recalc.isSuccess ? <SuccessNote>{L("已新增一筆計算紀錄；舊紀錄保留不變。", "A new calculation record was added; earlier records are kept unchanged.")}</SuccessNote> : null}
       {explain.error ? <ErrorState error={explain.error} /> : null}
       {run ? (
         <>
@@ -297,9 +300,9 @@ export function ScenarioDetail({ id }: { id: string }) {
           {report.error ? <ErrorState error={report.error} /> : null}
         </>
       ) : null}
-      {result ? <ScenarioPlayer key={`${s.results.length}-${s.latest?.rule_version_label}`} result={result} /> : <Card><EmptyState title="尚未計算" action={<Button onClick={() => recalc.mutate()}>計算</Button>} /></Card>}
+      {result ? <ScenarioPlayer key={`${s.results.length}-${s.latest?.rule_version_label}`} result={result} /> : <Card><EmptyState title={L("尚未計算", "Not calculated yet")} action={<Button onClick={() => recalc.mutate()}>{L("計算", "Calculate")}</Button>} /></Card>}
       <Card>
-        <CardHeader title="計算紀錄（不可覆寫）" />
+        <CardHeader title={L("計算紀錄（不可覆寫）", "Calculation records (immutable)")} />
         <ul className="divide-y divide-line px-5 pb-3 text-[13px]">
           {s.results.map((r) => (
             <li key={r.id} className="num flex flex-wrap gap-3 py-2 text-ink-2"><span>{fmtDate(r.created_at, locale, true)}</span><span>{r.calculation_version}</span><span>{r.rule_version_label}</span></li>
@@ -353,7 +356,7 @@ export function ScenarioCompare() {
               <Card key={it.id} className="p-4">
                 <p className="font-semibold text-ink">{it.name}</p>
                 <p className="num text-[12px] text-ink-3">{it.result?.rule_version_label}</p>
-                {last ? <p className="num mt-2 text-[13px] text-ink-2">最後價格 {last.price}／維持率 {last.maintenance_ratio_pct ?? "—"}%／未計費用損益 {fmtMoney(last.metrics.gross_pnl.value, locale)}</p> : null}
+                {last ? <p className="num mt-2 text-[13px] text-ink-2">{locale === "en" ? `Last price ${last.price} / ratio ${last.maintenance_ratio_pct ?? "—"}% / P&L before costs ${fmtMoney(last.metrics.gross_pnl.value, locale)}` : `最後價格 ${last.price}／維持率 ${last.maintenance_ratio_pct ?? "—"}%／未計費用損益 ${fmtMoney(last.metrics.gross_pnl.value, locale)}`}</p> : null}
                 <ul className="mt-3 space-y-1.5 text-[13px]">
                   {events.map((n) => <li key={n.id} className="flex items-center justify-between gap-2"><span className="truncate">{n.title_zh}</span><span className="num text-[11px] text-ink-3">{n.date ?? "—"}</span></li>)}
                 </ul>

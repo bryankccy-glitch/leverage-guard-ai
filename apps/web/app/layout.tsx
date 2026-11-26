@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_TC } from "next/font/google";
+import { SkipLink } from "@/components/SkipLink";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -25,10 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="zh-Hant-TW" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${notoTC.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2">
-          跳到主要內容
-        </a>
-        <Providers>{children}</Providers>
+        <Providers>
+          <SkipLink />
+          {children}
+        </Providers>
       </body>
     </html>
   );

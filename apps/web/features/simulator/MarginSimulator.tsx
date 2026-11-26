@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, CardHeader, ErrorState, Field, Input, LoadingBlock, Notice, NumberField, SimBadge, SuccessNote } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { cn, fmtMoney, fmtNum, nextWeekday, todayTW, useToday } from "@/lib/format";
+import { articleLabel, lawTitle, useL } from "@/lib/i18n";
 import { marginPreview } from "@/lib/margin-preview";
 import { useAuth } from "@/stores/auth";
 import { RunProgress } from "../agents/RunProgress";
@@ -33,17 +34,19 @@ type Inputs = {
   as_of: string;
 };
 
+const DEMO_LABEL = { zh: "示範股票（虛構）", en: "Demo stock (fictional)" };
+
 const DEFAULTS: Inputs = {
-  asset_label: "示範股票（虛構）", buy_price: "100", quantity: "1000", financing_ratio: "0.6", current_price: "100",
+  asset_label: DEMO_LABEL.zh, buy_price: "100", quantity: "1000", financing_ratio: "0.6", current_price: "100",
   annual_interest_rate: "0.0645", holding_days: "30", fee_rate: "0.001425", fee_discount: "1", min_fee: "20",
   other_collateral_value: "0", as_of: "",
 };
 
-const PRESETS: { key: string; label: string; price: string }[] = [
-  { key: "flat", label: "持平 100", price: "100" },
-  { key: "m20", label: "−20%（80）", price: "80" },
-  { key: "m30", label: "−30%（70）", price: "70" },
-  { key: "m50", label: "−50%（50）", price: "50" },
+const PRESETS: { key: string; label: string; labelEn: string; price: string }[] = [
+  { key: "flat", label: "持平 100", labelEn: "Flat 100", price: "100" },
+  { key: "m20", label: "−20%（80）", labelEn: "−20% (80)", price: "80" },
+  { key: "m30", label: "−30%（70）", labelEn: "−30% (70)", price: "70" },
+  { key: "m50", label: "−50%（50）", labelEn: "−50% (50)", price: "50" },
 ];
 
 function useDebounced<T>(v: T, ms = 300) {
@@ -58,22 +61,29 @@ function useDebounced<T>(v: T, ms = 300) {
 export function MarginSimulator() {
   const t = useTranslations();
   const locale = useLocale();
+  const L = useL();
+  const isEn = locale === "en";
   const token = useAuth((s) => s.token);
   const [inpState, setInp] = useState<Inputs>(DEFAULTS);
   // 日期只在瀏覽器端取得（預先渲染時不能讀取目前時間）
   const today = useToday();
-  const inp = useMemo(() => (inpState.as_of || !today ? inpState : { ...inpState, as_of: today }), [inpState, today]);
+  const inp = useMemo(() => {
+    const withDate = inpState.as_of || !today ? inpState : { ...inpState, as_of: today };
+    // 示範名稱跟著語系切換；使用者自己輸入的名稱不動
+    const demo = withDate.asset_label === DEMO_LABEL.zh || withDate.asset_label === DEMO_LABEL.en;
+    return demo ? { ...withDate, asset_label: isEn ? DEMO_LABEL.en : DEMO_LABEL.zh } : withDate;
+  }, [inpState, today, isEn]);
   const set = (k: keyof Inputs) => (v: string) => setInp({ ...inp, [k]: v });
   const debounced = useDebounced(inp);
 
   const body = useMemo(() => ({
-    asset_label: debounced.asset_label || "模擬資產",
+    asset_label: debounced.asset_label || (isEn ? "Simulated asset" : "模擬資產"),
     buy_price: debounced.buy_price, quantity: debounced.quantity, financing_ratio: debounced.financing_ratio,
     current_price: debounced.current_price, annual_interest_rate: debounced.annual_interest_rate || null,
     holding_days: Number(debounced.holding_days || 0), other_collateral_value: debounced.other_collateral_value || "0",
     fees: { fee_rate: debounced.fee_rate, fee_discount: debounced.fee_discount, min_fee: debounced.min_fee },
     as_of: debounced.as_of || null, curve: true,
-  }), [debounced]);
+  }), [debounced, isEn]);
 
   const calc = useQuery({
     queryKey: ["margin-calc", body],
@@ -102,10 +112,10 @@ export function MarginSimulator() {
     annual_interest_rate: inp.annual_interest_rate || null, start_date: nextWeekday(inp.as_of || todayTW()),
     fees: { fee_rate: inp.fee_rate, fee_discount: inp.fee_discount, min_fee: inp.min_fee },
     other_collateral_value: inp.other_collateral_value || "0",
-    steps: [{ day: 0, price: inp.buy_price, label: "建倉" }, { day: 1, price: inp.current_price, label: "模擬價格" }],
+    steps: [{ day: 0, price: inp.buy_price, label: L("建倉", "Open position") }, { day: 1, price: inp.current_price, label: L("模擬價格", "Simulated price") }],
   });
   const save = useMutation({
-    mutationFn: () => api<{ id: string }>("/simulations", { body: { scenario_name: `融資模擬：${inp.asset_label} @ ${inp.current_price}`, scenario_type: "margin", input_parameters: scenarioInput() } }),
+    mutationFn: () => api<{ id: string }>("/simulations", { body: { scenario_name: `${L("融資模擬：", "Margin simulation: ")}${inp.asset_label} @ ${inp.current_price}`, scenario_type: "margin", input_parameters: scenarioInput() } }),
     onSuccess: (r) => setSaved(r.id),
   });
   const analyze = useMutation({
@@ -133,7 +143,7 @@ export function MarginSimulator() {
               <NumberField label={t("sim.buyPrice")} value={inp.buy_price} onChange={set("buy_price")} error={fieldErr("buy_price")} />
               <NumberField label={t("sim.quantity")} value={inp.quantity} onChange={set("quantity")} step="1" error={fieldErr("quantity")} suffix={t("common.shares")} />
             </div>
-            <NumberField label={t("sim.financingRatio")} value={inp.financing_ratio} onChange={set("financing_ratio")} step="0.01" error={fieldErr("financing_ratio")} hint="0.6 = 六成（依標的與券商規定）" />
+            <NumberField label={t("sim.financingRatio")} value={inp.financing_ratio} onChange={set("financing_ratio")} step="0.01" error={fieldErr("financing_ratio")} hint={L("0.6 = 六成（依標的與券商規定）", "0.6 = 60% (depends on the security and your broker)")} />
             <div className="space-y-2 rounded-[12px] bg-surface-muted p-3">
               <div className="flex items-baseline justify-between">
                 <label htmlFor="price-slider" className="text-[13px] font-medium text-ink-2">{t("sim.currentPrice")}</label>
@@ -145,24 +155,24 @@ export function MarginSimulator() {
               </Slider.Root>
               <div className="flex flex-wrap gap-1.5">
                 {PRESETS.map((p) => (
-                  <button key={p.key} onClick={() => set("current_price")(String((buy * Number(p.price)) / 100))} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[12px] text-ink-2 hover:text-ink">{p.label}</button>
+                  <button key={p.key} onClick={() => set("current_price")(String((buy * Number(p.price)) / 100))} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[12px] text-ink-2 hover:text-ink">{isEn ? p.labelEn : p.label}</button>
                 ))}
               </div>
-              <p className="text-[11px] text-ink-3">價格顏色採台股慣例：紅漲綠跌（只代表價格方向，不代表風險）</p>
+              <p className="text-[11px] text-ink-3">{L("價格顏色採台股慣例：紅漲綠跌（只代表價格方向，不代表風險）", "Price colours follow the Taiwan convention: red = up, green = down (direction only, not risk).")}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <NumberField label={t("sim.interestRate")} value={inp.annual_interest_rate} onChange={set("annual_interest_rate")} step="0.0001" hint="0.0645 = 6.45%" error={fieldErr("annual_interest_rate")} />
               <NumberField label={t("sim.holdingDays")} value={inp.holding_days} onChange={set("holding_days")} step="1" suffix={t("common.days")} />
             </div>
             <details className="rounded-[8px] border border-line px-3 py-2">
-              <summary className="cursor-pointer text-[13px] text-ink-2">手續費、擔保品與規則日期</summary>
+              <summary className="cursor-pointer text-[13px] text-ink-2">{L("手續費、擔保品與規則日期", "Fees, collateral and rule date")}</summary>
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-3 gap-2">
                   <NumberField label={t("sim.feeRate")} value={inp.fee_rate} onChange={set("fee_rate")} step="0.000001" />
                   <NumberField label={t("sim.feeDiscount")} value={inp.fee_discount} onChange={set("fee_discount")} step="0.01" />
                   <NumberField label={t("sim.minFee")} value={inp.min_fee} onChange={set("min_fee")} step="1" />
                 </div>
-                <NumberField label={t("sim.otherCollateral")} value={inp.other_collateral_value} onChange={set("other_collateral_value")} hint="抵繳品需先依規定折算（例如上市股票按基準價七折）" />
+                <NumberField label={t("sim.otherCollateral")} value={inp.other_collateral_value} onChange={set("other_collateral_value")} hint={L("抵繳品需先依規定折算（例如上市股票按基準價七折）", "Substitute collateral must be discounted per the rules first (e.g. listed stocks at 70% of the reference price).")} />
                 <Field label={t("sim.asOf")} htmlFor="asof"><Input id="asof" type="date" value={inp.as_of} onChange={(e) => set("as_of")(e.target.value)} /></Field>
               </div>
             </details>
@@ -174,7 +184,7 @@ export function MarginSimulator() {
                 <Link href="/login" className="text-[12px] text-blue hover:underline">{t("common.loginToSave")}</Link>
               )}
             </div>
-            {saved ? <SuccessNote><Link href={`/scenarios/${saved}`} className="underline">已儲存情境</Link></SuccessNote> : null}
+            {saved ? <SuccessNote><Link href={`/scenarios/${saved}`} className="underline">{L("已儲存情境", "Scenario saved")}</Link></SuccessNote> : null}
             {save.error ? <ErrorState error={save.error} /> : null}
           </div>
         </Card>
@@ -182,13 +192,13 @@ export function MarginSimulator() {
         {/* 中欄：財務視覺化 */}
         <div className="min-w-0 space-y-5">
           <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
-            <Kpi hero label={t("metrics.maintenance_ratio")} value={preview?.ratioPct ? `${fmtNum(preview.ratioPct, locale, 2)}%` : "—"} sub={preview?.belowThreshold ? `低於 ${Number(thresholdParam) * 100}% 門檻` : `門檻 ${Number(thresholdParam) * 100}%`} warn={preview?.belowThreshold} />
+            <Kpi hero label={t("metrics.maintenance_ratio")} value={preview?.ratioPct ? `${fmtNum(preview.ratioPct, locale, 2)}%` : "—"} sub={preview?.belowThreshold ? L(`低於 ${Number(thresholdParam) * 100}% 門檻`, `Below ${Number(thresholdParam) * 100}% threshold`) : L(`門檻 ${Number(thresholdParam) * 100}%`, `Threshold ${Number(thresholdParam) * 100}%`)} warn={preview?.belowThreshold} />
             <Kpi label={t("metrics.gross_pnl")} value={preview ? fmtMoney(preview.grossPnl, locale) : "—"} negative={preview?.grossPnl.startsWith("-")} />
             <Kpi label={t("metrics.threshold_price")} value={preview?.thresholdPrice ? fmtNum(preview.thresholdPrice, locale, 2) : "—"} sub={t("common.simplified")} />
-            <Kpi label={t("metrics.margin_call_amount")} value={preview ? fmtMoney(preview.callAmount, locale) : "—"} sub="依第 54 條公式" />
+            <Kpi label={t("metrics.margin_call_amount")} value={preview ? fmtMoney(preview.callAmount, locale) : "—"} sub={L("依第 54 條公式", "Per Art. 54 formula")} />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[12px]" aria-live="polite">
-            <Badge tone="blue">{t("sim.previewCalc")}：Decimal.js</Badge>
+            <Badge tone="blue">{t("sim.previewCalc")}{isEn ? ": " : "："}Decimal.js</Badge>
             {stale ? <Badge tone="unknown">{t("sim.calcPending")}</Badge> : data ? <Badge tone="normal" icon={<CheckCircle2 size={12} aria-hidden />}>{t("sim.officialCalc")} {data.calculation_version}</Badge> : null}
             {mismatch ? <Badge tone="warning">{t("sim.calcMismatch")}</Badge> : null}
             {data ? <span className="num text-ink-3">{t("common.ruleVersion")} {data.rule_version}</span> : null}
@@ -202,7 +212,7 @@ export function MarginSimulator() {
             </div>
           </Card>
           <Card>
-            <CardHeader title={t("sim.metricsTitle")} desc="點一下任一數字可以看公式、輸入與規則" />
+            <CardHeader title={t("sim.metricsTitle")} desc={L("點一下任一數字可以看公式、輸入與規則", "Click any number to see its formula, inputs and rules")} />
             <div className="px-5 pb-4">
               {data ? <MetricList metrics={data.metrics} highlight={["maintenance_ratio", "net_pnl", "margin_call_amount"]} /> : <LoadingBlock rows={8} />}
             </div>
@@ -221,11 +231,11 @@ export function MarginSimulator() {
         {/* 右欄：法律後果 */}
         <div className="space-y-5">
           <Card>
-            <CardHeader title={t("sim.legal")} desc={`${t("sim.triggered")}：${triggered.length}`} />
+            <CardHeader title={t("sim.legal")} desc={`${t("sim.triggered")}${isEn ? ": " : "："}${triggered.length}`} />
             <div className="space-y-3 p-5">
               {triggered.length === 0 ? (
                 <Notice tone="normal" title={t("sim.notTriggered")}>
-                  目前模擬價格下，維持率高於追繳門檻。這不代表交易安全：股價繼續變動，事件仍可能觸發。
+                  {L("目前模擬價格下，維持率高於追繳門檻。這不代表交易安全：股價繼續變動，事件仍可能觸發。", "At the simulated price, the maintenance ratio is above the call threshold. That does not mean the trade is safe: if the price keeps moving, events can still be triggered.")}
                 </Notice>
               ) : (
                 rulesWithEvents.map((r) => (
@@ -237,9 +247,9 @@ export function MarginSimulator() {
                 ))
               )}
               {triggered.length ? (
-                <Notice tone="warning" title="接下來可能發生">
-                  補繳期限從「通知送達之日」起算二個營業日；期限內沒補足、期限當天維持率仍不足，券商自次一營業日起處分擔保品。
-                  <Link href="/scenarios/new?preset=residual_debt" className="ml-1 text-blue underline">在實驗室推演完整時間軸</Link>
+                <Notice tone="warning" title={L("接下來可能發生", "What may happen next")}>
+                  {L("補繳期限從「通知送達之日」起算二個營業日；期限內沒補足、期限當天維持率仍不足，券商自次一營業日起處分擔保品。", "The top-up deadline is two business days from the date the notice is delivered. If you do not top up in time and the ratio is still short on the deadline, the broker disposes of collateral from the next business day.")}
+                  <Link href="/scenarios/new?preset=residual_debt" className="ml-1 text-blue underline">{L("在實驗室推演完整時間軸", "Play out the full timeline in the lab")}</Link>
                 </Notice>
               ) : null}
               <div className="flex flex-wrap gap-2">
@@ -262,7 +272,7 @@ export function MarginSimulator() {
                   <span className="flex-1">
                     <span className="font-medium text-ink">{r.rule_name}</span>
                     <span className="num ml-1 text-[11px] text-ink-3">{r.rule_id}@{r.version}</span>
-                    <span className="block text-[12px] text-ink-3">{r.citations.map((c) => `${c.official_title} ${c.article_number}`).join("、")}</span>
+                    <span className="block text-[12px] text-ink-3">{r.citations.map((c) => `${lawTitle(c.source_key, c.official_title, isEn)} ${articleLabel(c.article_number, isEn)}`).join(isEn ? "; " : "、")}</span>
                   </span>
                 </li>
               ))}

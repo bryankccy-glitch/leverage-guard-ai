@@ -5,6 +5,7 @@ import { Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { demoSwap, useIsEn, useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, ErrorState, Field, Input, LoadingBlock, Notice, NumberField, Select, SimBadge, SuccessNote } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { nextWeekday, useToday } from "@/lib/format";
@@ -36,10 +37,15 @@ const SCENARIOS: { key: string; patch: Partial<In> }[] = [
 
 export function DayTradeSimulator() {
   const t = useTranslations();
+  const L = useL();
   const token = useAuth((s) => s.token);
   const [inpState, setInp] = useState<In>(BASE);
   const today = useToday();
-  const inp = useMemo(() => (inpState.trade_date || !today ? inpState : { ...inpState, trade_date: nextWeekday(today) }), [inpState, today]);
+  const isEn = useIsEn();
+  const inp = useMemo(() => {
+    const v = inpState.trade_date || !today ? inpState : { ...inpState, trade_date: nextWeekday(today) };
+    return { ...v, asset_label: demoSwap(v.asset_label, isEn) };
+  }, [inpState, today, isEn]);
   const set = (k: keyof In) => (v: string) => setInp({ ...inp, [k]: v });
   const [debounced, setDebounced] = useState(inp);
   useEffect(() => {
@@ -64,7 +70,7 @@ export function DayTradeSimulator() {
   const [saved, setSaved] = useState<string | null>(null);
   const [run, setRun] = useState<{ run_id: string; cached: boolean } | null>(null);
   const save = useMutation({
-    mutationFn: () => api<{ id: string }>("/simulations", { body: { scenario_name: `當沖模擬：${inp.asset_label}（${inp.direction === "buy_first" ? "先買後賣" : "先賣後買"}）`, scenario_type: "day_trading", input_parameters: body } }),
+    mutationFn: () => api<{ id: string }>("/simulations", { body: { scenario_name: isEn ? `Day-trade simulation: ${inp.asset_label} (${inp.direction === "buy_first" ? "buy first" : "sell first"})` : `當沖模擬：${inp.asset_label}（${inp.direction === "buy_first" ? "先買後賣" : "先賣後買"}）`, scenario_type: "day_trading", input_parameters: body } }),
     onSuccess: (r) => setSaved(r.id),
   });
   const analyze = useMutation({
@@ -106,7 +112,7 @@ export function DayTradeSimulator() {
             {inp.direction === "sell_first" ? (
               <div className="grid grid-cols-2 gap-3 rounded-[12px] bg-surface-muted p-3">
                 <NumberField label={t("sim.dt.buyback")} value={inp.assumed_buyback_price} onChange={set("assumed_buyback_price")} />
-                <NumberField label={t("sim.dt.borrowFee")} value={inp.assumed_borrow_fee_rate} onChange={set("assumed_borrow_fee_rate")} hint="上限 0.07（收盤價 7%）" error={err("assumed_borrow_fee_rate")} />
+                <NumberField label={t("sim.dt.borrowFee")} value={inp.assumed_borrow_fee_rate} onChange={set("assumed_borrow_fee_rate")} hint={L("上限 0.07（收盤價 7%）", "Max 0.07 (7% of closing price)")} error={err("assumed_borrow_fee_rate")} />
               </div>
             ) : null}
             <details className="rounded-[8px] border border-line px-3 py-2">
@@ -118,7 +124,7 @@ export function DayTradeSimulator() {
               </div>
             </details>
             {token ? <Button variant="secondary" size="sm" onClick={() => save.mutate()} disabled={save.isPending}><Save size={14} />{t("sim.saveScenario")}</Button> : <Link href="/login" className="text-[12px] text-blue hover:underline">{t("common.loginToSave")}</Link>}
-            {saved ? <SuccessNote><Link className="underline" href={`/scenarios/${saved}`}>已儲存情境</Link></SuccessNote> : null}
+            {saved ? <SuccessNote><Link className="underline" href={`/scenarios/${saved}`}>{L("已儲存情境", "Scenario saved")}</Link></SuccessNote> : null}
           </div>
         </Card>
 
@@ -126,12 +132,12 @@ export function DayTradeSimulator() {
           {calc.error && !d ? <Card><ErrorState error={calc.error} onRetry={() => calc.refetch()} /></Card> : calc.isLoading || !d ? <Card><LoadingBlock rows={8} /></Card> : (
             <>
               <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                <Badge tone="blue">稅率 {Number(d.parameters.day_trade_tax_rate) * 1000}‰（當沖）／{Number(d.parameters.general_tax_rate) * 1000}‰（一般）</Badge>
-                <Badge tone="unknown">交割日 {d.parameters.settlement_date}</Badge>
+                <Badge tone="blue">{isEn ? `Tax ${Number(d.parameters.day_trade_tax_rate) * 1000}‰ (day trade) / ${Number(d.parameters.general_tax_rate) * 1000}‰ (general)` : `稅率 ${Number(d.parameters.day_trade_tax_rate) * 1000}‰（當沖）／${Number(d.parameters.general_tax_rate) * 1000}‰（一般）`}</Badge>
+                <Badge tone="unknown">{L("交割日", "Settlement date")} {d.parameters.settlement_date}</Badge>
                 <span className="num text-ink-3">{t("common.ruleVersion")} {d.rule_version}</span>
               </div>
               <Card>
-                <CardHeader title={t("sim.metricsTitle")} desc="點一下任一數字可以看公式" />
+                <CardHeader title={t("sim.metricsTitle")} desc={L("點一下任一數字可以看公式", "Click any number to see its formula")} />
                 <div className="px-5 pb-4">
                   <MetricList metrics={d.metrics!} highlight={["net_pnl", "funding_gap", "settlement_payable"]} />
                 </div>

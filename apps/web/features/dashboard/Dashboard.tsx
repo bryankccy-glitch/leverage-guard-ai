@@ -5,6 +5,7 @@ import { ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, FileSearch, FileTe
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
+import { useL } from "@/lib/i18n";
 import { useRuleVersion } from "@/components/shell/AppShell";
 import { Badge, Card, EmptyState, ErrorState, EventStatus, LoadingBlock, SimBadge } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -21,6 +22,7 @@ type Dash = {
 
 export function Dashboard() {
   const t = useTranslations();
+  const L = useL();
   const locale = useLocale();
   const token = useAuth((s) => s.token);
   const hydrated = useHydrated();
@@ -136,9 +138,9 @@ export function Dashboard() {
       <Card className="p-5">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-ink"><BookOpenText size={18} className="text-brand" />{t("dashboard.knowledge")}</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <KnowledgeLink href="/legal/search?q=追繳" title="追繳與擔保維持率" desc="證交所融資融券業務操作辦法第 53、54 條" />
-          <KnowledgeLink href="/legal/search?q=處分其擔保品" title="擔保品處分與剩餘債務" desc="第 55、81 條：處分、溢額發還、不足補足" />
-          <KnowledgeLink href="/legal/search?q=當日沖銷" title="現股當沖與強制買回" desc="當日沖銷交易作業辦法第 1、7、9、13 條" />
+          <KnowledgeLink href="/legal/search?q=追繳" title={L("追繳與擔保維持率", "Margin calls and maintenance ratio")} desc={L("證交所融資融券業務操作辦法第 53、54 條", "TWSE margin operating rules, Arts. 53–54")} />
+          <KnowledgeLink href="/legal/search?q=處分其擔保品" title={L("擔保品處分與剩餘債務", "Collateral disposal and residual debt")} desc={L("第 55、81 條：處分、溢額發還、不足補足", "Arts. 55 and 81: disposal, surplus refund, shortfall top-up")} />
+          <KnowledgeLink href="/legal/search?q=當日沖銷" title={L("現股當沖與強制買回", "Cash day trading and forced buy-ins")} desc={L("當日沖銷交易作業辦法第 1、7、9、13 條", "Day trading operating rules, Arts. 1, 7, 9, 13")} />
         </div>
       </Card>
     </div>

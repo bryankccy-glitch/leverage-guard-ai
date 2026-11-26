@@ -11,6 +11,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
+from .. import i18n
+
 WATERMARK = "未經專業審查｜NOT PROFESSIONALLY REVIEWED"
 
 
@@ -115,17 +117,18 @@ def to_pdf(report: dict[str, Any], meta: dict[str, Any], curve: list[dict[str, A
         canvas.setFillColor(colors.HexColor("#DC2626"))
         canvas.drawString(40, A4[1] - 28, WATERMARK)
         canvas.setFillColor(colors.HexColor("#64748B"))
-        canvas.drawRightString(A4[0] - 40, 24, f"LeverageGuard AI｜{meta['report_number']}｜第 {doc.page} 頁")
+        canvas.drawRightString(A4[0] - 40, 24, (f"LeverageGuard AI | {meta['report_number']} | page {doc.page}" if i18n.is_en() else f"LeverageGuard AI｜{meta['report_number']}｜第 {doc.page} 頁"))
         canvas.restoreState()
 
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=46, bottomMargin=40,
                             title=f"LeverageGuard AI {meta['report_number']}")
-    title = "個人金融法律風險報告（投資人版）" if report["report_type"] == "investor" else "金融法律風險報告（專業版）"
+    title = i18n.tr("個人金融法律風險報告（投資人版）" if report["report_type"] == "investor" else "金融法律風險報告（專業版）")
     story = [p("LeverageGuard AI", st_s), p(title, st_h1), Spacer(1, 4)]
     info = [["報告編號", meta["report_number"]], ["產生時間", meta["generated_at"]],
             ["計算版本", meta["calculation_version"]], ["規則版本", meta["rule_version"]],
             ["法源版本", meta["legal_source_version"][:90]], ["模型", meta.get("model_version") or "未使用生成式 AI"],
             ["審查狀態", "未經專業審查"], ["資料性質", "模擬情境（非真實帳戶、非投資建議）"]]
+    info = i18n.translate(info)
     t = Table([[p(a, st_s), p(b, st_s)] for a, b in info], colWidths=[70, 440])
     t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#DCE3EB")),
                            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#EEF2F6"))]))
@@ -141,7 +144,7 @@ def to_pdf(report: dict[str, Any], meta: dict[str, Any], curve: list[dict[str, A
         lp.lines[1].strokeColor, lp.lines[1].strokeDashArray = colors.HexColor("#DC2626"), [3, 3]
         lp.xValueAxis.labels.fontName = lp.yValueAxis.labels.fontName = "Helvetica"
         d.add(lp)
-        d.add(String(40, 158, "模擬股價 vs. 擔保維持率（%）；紅色虛線為 130% 追繳門檻", fontName=f, fontSize=8))
+        d.add(String(40, 158, i18n.tr("模擬股價 vs. 擔保維持率（%）；紅色虛線為 130% 追繳門檻"), fontName=f, fontSize=8))
         story += [d, Spacer(1, 6)]
 
     for sec in report["sections"]:

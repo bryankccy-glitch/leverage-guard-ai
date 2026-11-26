@@ -14,6 +14,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from .. import i18n
 from ..agents import copilot as copilot_agent
 from ..agents import workflow
 from ..contracts import service as contracts
@@ -183,7 +184,7 @@ def explain(sid: str, user: CurrentUser, background: BackgroundTasks, contract_i
                                           "rv": s["rule_version_label"]}, scenario_id=sid, contract_id=contract_id)
     if not cached:
         _schedule(background, workflow.run_simulation_analysis, run_id, ttype, s["input_parameters"], contract_id,
-                            status_overrides())
+                  status_overrides(), i18n.get_locale())
     return {"run_id": run_id, "cached": cached}
 
 
@@ -212,7 +213,7 @@ def agents_run(body: AgentRunIn, user: CurrentUser, background: BackgroundTasks)
                                          contract_id=body.contract_id)
     if not cached:
         _schedule(background, workflow.run_simulation_analysis, run_id, body.trading_type, body.input_parameters,
-                            body.contract_id, status_overrides())
+                  body.contract_id, status_overrides(), i18n.get_locale())
     return {"run_id": run_id, "cached": cached}
 
 
@@ -269,6 +270,8 @@ async def agent_events(rid: str, user: CurrentUser, request: Request, after: int
     with user_session(user.claims) as conn:
         if not one(conn, "select id from agent_runs where id::text = :i", i=rid):
             raise ApiError(404, "not_found", "找不到執行紀錄")
+    # 串流在 middleware 結束後才送出，語系要在這裡先記下
+    en = i18n.is_en()
 
     async def gen():
         last = after
@@ -281,7 +284,7 @@ async def agent_events(rid: str, user: CurrentUser, request: Request, after: int
                 st = one(conn, "select status from agent_runs where id::text = :i", i=rid)
             for e in evs:
                 last = e["seq"]
-                yield f"event: progress\ndata: {json.dumps(e, ensure_ascii=False)}\n\n"
+                yield f"event: progress\ndata: {json.dumps(i18n.translate(e) if en else e, ensure_ascii=False)}\n\n"
             if st and st["status"] in ("completed", "failed", "cancelled"):
                 yield f"event: done\ndata: {json.dumps({'status': st['status']})}\n\n"
                 return
@@ -665,6 +668,8 @@ def export_report(rid: str, user: CurrentUser, format: Literal["pdf", "json", "c
             "calculation_version": r["calculation_version"], "rule_version": r["rule_version"],
             "legal_source_version": r["legal_source_version"], "model_version": r["model_version"]}
     fname = f"{r['report_number']}.{format}"
+    if i18n.is_en():
+        r = {**r, "report_content": i18n.translate(r["report_content"])}
     if format == "json":
         return Response(json.dumps({"meta": meta, **r["report_content"]}, ensure_ascii=False, indent=1),
                         media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{fname}"'})

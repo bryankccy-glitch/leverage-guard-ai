@@ -63,3 +63,24 @@ cd apps/api && .venv/bin/python -m pytest -q
 - 第二次失敗是測試等待「工作流程完成」事件，但相同輸入命中快取時不會重播事件；改為等待結果區塊的「數字未被 AI 修改」徽章。
 - 結果：後端 pytest 47 passed、Ruff 通過；Playwright 10/10 passed。
 - 觀察：較早一次未命中快取的千問分析花了約 20 分鐘（19:09→19:29，多次逾時後改用模板）。本機 16GB 同時跑 qwen3:8b、嵌入模型、Docker 與 Next 時很慢；展示前建議先暖機模型，或把 `LLM_TIMEOUT_SECONDS` 調低到 90 讓模板更快接手。
+
+## 英文化（2026-11-26，Claude；Codex 額度用完改由 Claude 實作）
+
+分支 `codex/full-english`（worktree `.tmp/codex-en`），尚未 commit。
+
+做法：
+- 前端：寫死中文改成 `L("中文", "English")`（`lib/i18n.tsx` 的 `useL`／`useIsEn`，語系一律從 next-intl `useLocale()` 讀，避免 Suspense hydration 不一致）；靜態頁用 `<Bi zh en>`；`PageTitle` 支援 `subtitleEn` 並更新分頁標題；`api.ts` 一律帶 `Accept-Language`。
+- 後端：`app/i18n.py` ＋ middleware，`Accept-Language: en` 時在回應送出前翻譯 JSON（完全相同字串＋含數字的樣板）；計算／規則／時間軸引擎完全沒改。`quote`、`content`、`original_text` 等原文欄位不翻。SSE 與報告匯出（JSON/CSV/PDF）另外處理。
+- 規則英文名稱與白話說明：`data/i18n/rules_en.json`（非官方翻譯）。
+- AI：英文模式用英文 system prompt／prompt，快取鍵含語系；`guards.py` 補英文的投資建議／誤解偵測（否則英文輸出會繞過審查閘門）。
+- 官方法條、法條章節、修正對照、契約原文刻意保留中文並標 `lang="zh-Hant-TW"`，英文版加註「Original text (Traditional Chinese)」。
+
+驗收：
+- 後端 pytest 65 passed（原 47＋新 `tests/test_i18n.py` 18）、Ruff PASS。
+- 前端 tsc PASS（`LayoutProps` 錯誤是 worktree 未產生型別，build 後消失）、ESLint 0 警告、`next build` PASS。
+- 瀏覽器巡檢（worktree 服務 3001/8811）：英文 reviewer 51 頁、英文 investor 51 頁、中文 investor 51 頁，皆 0 錯誤、英文版無可見中文。
+
+已知限制：
+- 英文模式的 Copilot／法規搜尋仍以中文關鍵字檢索法條，用英文提問的檢索效果較差。
+- 新增中文字串時要同步補 `app/i18n.py`；`test_i18n.py` 會抓出漏翻。
+- 法規英文名稱：前三部依全國法規資料庫英文名稱（未連網再次核對），其餘為本平台翻譯。

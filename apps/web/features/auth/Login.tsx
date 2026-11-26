@@ -5,6 +5,7 @@ import { LogIn, ShieldCheck, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useL } from "@/lib/i18n";
 import { LogoHorizontal } from "@/components/brand/Logo";
 import { Badge, Card, ErrorState, LoadingBlock, Notice } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -14,6 +15,7 @@ type Config = { mode: "local" | "supabase"; demo_accounts: { email: string; labe
 
 export function Login({ register }: { register?: boolean }) {
   const t = useTranslations();
+  const L = useL();
   const router = useRouter();
   const setSession = useAuth((s) => s.setSession);
   const cfg = useQuery({ queryKey: ["auth-config"], queryFn: () => api<Config>("/auth/config", { auth: false }) });
@@ -53,7 +55,7 @@ export function Login({ register }: { register?: boolean }) {
           </div>
         ) : (
           <Notice tone="warning" title={t("auth.supabaseMode")}>
-            已設定 AUTH_MODE=supabase。前端的 Supabase 登入元件需要 NEXT_PUBLIC_SUPABASE_URL 與 NEXT_PUBLIC_SUPABASE_ANON_KEY，目前尚未設定。
+            {L("已設定 AUTH_MODE=supabase。前端的 Supabase 登入元件需要 NEXT_PUBLIC_SUPABASE_URL 與 NEXT_PUBLIC_SUPABASE_ANON_KEY，目前尚未設定。", "AUTH_MODE=supabase is set. The Supabase sign-in component needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, which are not set yet.")}
           </Notice>
         )}
         <div className="mt-5 border-t border-line pt-4 text-center">
