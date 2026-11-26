@@ -3,6 +3,7 @@
 import { ChevronDown, Sigma } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { useIsEn } from "@/lib/i18n";
 import { Badge } from "@/components/ui";
 import { cn, fmtValue } from "@/lib/format";
 import type { Metric } from "./types";
@@ -20,6 +21,7 @@ export function MetricList({ metrics, keys, highlight }: { metrics: Record<strin
 }
 
 function MetricRow({ m, emphasize }: { m: Metric; emphasize?: boolean }) {
+  const isEn = useIsEn();
   const t = useTranslations();
   const locale = useLocale();
   const [open, setOpen] = useState(false);
@@ -40,11 +42,11 @@ function MetricRow({ m, emphasize }: { m: Metric; emphasize?: boolean }) {
       </button>
       {open ? (
         <div className="mb-2 space-y-1.5 rounded-[8px] bg-surface-muted px-3 py-2 text-[12px] text-ink-2">
-          <p className="flex items-start gap-1.5"><Sigma size={13} className="mt-0.5 shrink-0" aria-hidden /><span><b>{t("common.formula")}：</b>{m.formula}</span></p>
+          <p className="flex items-start gap-1.5"><Sigma size={13} className="mt-0.5 shrink-0" aria-hidden /><span><b>{t("common.formula")}{isEn ? ": " : "："}</b>{m.formula}</span></p>
           {Object.keys(m.inputs).length ? (
             <p className="num">{Object.entries(m.inputs).filter(([, v]) => v !== null && v !== "None").map(([k, v]) => `${k}=${v}`).join("　")}</p>
           ) : null}
-          {m.rule_ids.length ? <p>{t("common.ruleVersion")}：{m.rule_ids.join("、")}</p> : null}
+          {m.rule_ids.length ? <p>{t("common.ruleVersion")}{isEn ? ": " : "："}{m.rule_ids.join(isEn ? ", " : "、")}</p> : null}
           {m.note ? <p className="text-ink-3">※ {m.note}</p> : null}
         </div>
       ) : null}

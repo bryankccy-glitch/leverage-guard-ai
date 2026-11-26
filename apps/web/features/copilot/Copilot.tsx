@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Bot, Send, ShieldOff } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { useIsEn } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, ErrorState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtValue } from "@/lib/format";
@@ -23,6 +24,7 @@ type Answer = {
 
 /** 內嵌在模擬器與法律頁面的 Copilot：讀取目前的模擬參數，數字一律由計算引擎重算。 */
 export function Copilot({ context }: { context?: { trading_type: string; input: Record<string, unknown> } }) {
+  const isEn = useIsEn();
   const t = useTranslations("copilot");
   const locale = useLocale();
   const token = useAuth((s) => s.token);
@@ -59,7 +61,7 @@ export function Copilot({ context }: { context?: { trading_type: string; input: 
                 <p className="whitespace-pre-line text-ink">{x.a.answer}</p>
                 {x.a.comparison ? (
                   <div className="mt-2 rounded-[8px] border border-line bg-surface p-2">
-                    <p className="mb-1 text-[12px] font-semibold text-ink-2">{t("comparison")}：{x.a.comparison.basis}</p>
+                    <p className="mb-1 text-[12px] font-semibold text-ink-2">{t("comparison")}{isEn ? ": " : "："}{x.a.comparison.basis}</p>
                     <table className="num w-full text-[12px]">
                       <thead><tr className="text-ink-3"><th className="text-left font-normal" /><th className="text-right font-normal">{t("before")}</th><th className="text-right font-normal">{t("after")}</th></tr></thead>
                       <tbody>

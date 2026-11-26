@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { forwardRef, useId } from "react";
+import { useIsEn } from "@/lib/i18n";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/format";
 
@@ -204,6 +205,7 @@ export function EmptyState({ title, desc, action, icon }: { title: ReactNode; de
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  const isEn = useIsEn();
   const t = useTranslations("common");
   const e = error instanceof ApiError ? error : null;
   if (e?.status === 401) return <UnauthorizedState />;
@@ -213,7 +215,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
         <XCircle size={16} aria-hidden /> {e?.status === 403 ? t("forbidden") : t("error")}
       </p>
       <p className="text-[13px] text-ink-2">{e?.message ?? String(error)}</p>
-      {e?.requestId ? <p className="num text-[12px] text-ink-3">{t("requestId")}：{e.requestId}</p> : null}
+      {e?.requestId ? <p className="num text-[12px] text-ink-3">{t("requestId")}{isEn ? ": " : "："}{e.requestId}</p> : null}
       {onRetry ? (
         <div>
           <Button variant="secondary" size="sm" onClick={onRetry}>{t("retry")}</Button>

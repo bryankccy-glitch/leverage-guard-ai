@@ -7,6 +7,7 @@ import { RotateCcw, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
+import { useIsEn, useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, LoadingBlock, Notice } from "@/components/ui";
 import { api } from "@/lib/api";
 import { fmtDate, useMounted } from "@/lib/format";
@@ -15,8 +16,8 @@ import { RunProgress, RunStatus, type RunDetail } from "./RunProgress";
 
 type AgentInfo = { name: string; description: string; kind: string; model: string | null; provider: string; executions: number; success_rate: string; avg_duration_ms: number | null; token_usage: number; estimated_cost: string | null; last_run: string | null };
 
-const FLOW: { id: string; label: string; x: number; y: number; kind: "agent" | "tool" | "gate" }[] = [
-  { id: "input", label: "使用者輸入", x: 0, y: 120, kind: "tool" },
+const FLOW: { id: string; label: string; labelEn?: string; x: number; y: number; kind: "agent" | "tool" | "gate" }[] = [
+  { id: "input", label: "使用者輸入", labelEn: "User input", x: 0, y: 120, kind: "tool" },
   { id: "orchestrator", label: "Orchestrator", x: 170, y: 120, kind: "agent" },
   { id: "financial_calculation", label: "Financial Calc", x: 360, y: 20, kind: "agent" },
   { id: "engine", label: "Financial Engine（Decimal）", x: 560, y: 20, kind: "tool" },
@@ -24,34 +25,36 @@ const FLOW: { id: string; label: string; x: number; y: number; kind: "agent" | "
   { id: "rules", label: "Regulation-as-Code", x: 560, y: 120, kind: "tool" },
   { id: "legal_retrieval", label: "Legal Retrieval", x: 360, y: 220, kind: "agent" },
   { id: "rag", label: "Legal RAG（pgvector）", x: 560, y: 220, kind: "tool" },
-  { id: "contract", label: "Contract（選用）", x: 360, y: 320, kind: "agent" },
+  { id: "contract", label: "Contract（選用）", labelEn: "Contract (optional)", x: 360, y: 320, kind: "agent" },
   { id: "verification", label: "Verification", x: 780, y: 120, kind: "agent" },
-  { id: "plain_language", label: "Plain Language（千問）", x: 970, y: 120, kind: "agent" },
+  { id: "plain_language", label: "Plain Language（千問）", labelEn: "Plain Language (Qwen)", x: 970, y: 120, kind: "agent" },
   { id: "review", label: "Review Gate", x: 1170, y: 120, kind: "gate" },
   { id: "report", label: "Report", x: 1350, y: 120, kind: "agent" },
 ];
-const EDGES: [string, string, string?][] = [
+const EDGES: [string, string, string?, string?][] = [
   ["input", "orchestrator"], ["orchestrator", "financial_calculation"], ["financial_calculation", "engine"], ["orchestrator", "legal_rules"],
-  ["legal_rules", "rules"], ["orchestrator", "legal_retrieval"], ["legal_retrieval", "rag"], ["orchestrator", "contract", "有契約時"],
+  ["legal_rules", "rules"], ["orchestrator", "legal_retrieval"], ["legal_retrieval", "rag"], ["orchestrator", "contract", "有契約時", "if contract"],
   ["engine", "verification"], ["rules", "verification"], ["rag", "verification"], ["contract", "verification"],
-  ["verification", "plain_language"], ["plain_language", "review"], ["review", "report", "通過"], ["review", "report", "未通過→模板"],
+  ["verification", "plain_language"], ["plain_language", "review"], ["review", "report", "通過", "pass"], ["review", "report", "未通過→模板", "fail → template"],
 ];
 
 export function WorkflowGraph({ statuses }: { statuses?: Record<string, string> }) {
   const { resolvedTheme } = useTheme();
   const mounted = useMounted();
+  const L = useL();
+  const isEn = useIsEn();
   const color = (id: string) => {
     const s = statuses?.[id];
     return s === "completed" ? "var(--risk-normal)" : s === "failed" ? "var(--risk-critical)" : s === "running" ? "var(--blue)" : "var(--border)";
   };
   const nodes: Node[] = FLOW.map((f) => ({
-    id: f.id, position: { x: f.x, y: f.y }, data: { label: f.label },
+    id: f.id, position: { x: f.x, y: f.y }, data: { label: isEn && f.labelEn ? f.labelEn : f.label },
     style: { borderRadius: f.kind === "gate" ? 999 : 10, border: `2px solid ${color(f.id)}`, background: f.kind === "tool" ? "var(--surface-muted)" : "var(--surface)", color: "var(--text)", fontSize: 12, width: f.kind === "tool" ? 170 : 150, padding: 8 },
   }));
-  const edges: Edge[] = EDGES.map(([s, t, label], i) => ({ id: `e${i}`, source: s, target: t, label, animated: statuses?.[t] === "running", markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: "var(--text-3)" }, labelStyle: { fontSize: 10, fill: "var(--text-3)" } }));
+  const edges: Edge[] = EDGES.map(([s, t, label, labelEn], i) => ({ id: `e${i}`, source: s, target: t, label: isEn ? labelEn : label, animated: statuses?.[t] === "running", markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: "var(--text-3)" }, labelStyle: { fontSize: 10, fill: "var(--text-3)" } }));
   if (!mounted) return <div className="skeleton h-[380px] rounded-[12px]" />;
   return (
-    <div className="h-[380px] rounded-[12px] border border-line" role="img" aria-label="Agent 工作流程：Orchestrator 分派計算、規則、檢索（與選用的契約）→ 驗證 → 白話說明 → 審查閘門 → 報告">
+    <div className="h-[380px] rounded-[12px] border border-line" role="img" aria-label={L("Agent 工作流程：Orchestrator 分派計算、規則、檢索（與選用的契約）→ 驗證 → 白話說明 → 審查閘門 → 報告", "Agent workflow: the orchestrator dispatches calculation, rules and retrieval (plus the optional contract) → verification → plain-language explanation → review gate → report")}>
       <ReactFlow nodes={nodes} edges={edges} fitView forceColorMode={resolvedTheme === "dark" ? "dark" : "light"} nodesDraggable={false} nodesConnectable={false} proOptions={{ hideAttribution: true }}>
         <Background />
         <Controls showInteractive={false} />
@@ -61,7 +64,9 @@ export function WorkflowGraph({ statuses }: { statuses?: Record<string, string> 
 }
 
 export function AgentsCenter() {
+  const isEn = useIsEn();
   const t = useTranslations("agents");
+  const L = useL();
   const locale = useLocale();
   const token = useAuth((s) => s.token);
   const agents = useQuery({ queryKey: ["agents", token], queryFn: () => api<{ items: AgentInfo[]; provider: { provider: string; model: string } }>("/agents"), enabled: !!token });
@@ -69,17 +74,17 @@ export function AgentsCenter() {
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader title={t("workflow")} desc="確定性工具（灰底）負責數字與規則；LLM 只負責白話說明，並經過審查閘門" />
+        <CardHeader title={t("workflow")} desc={L("確定性工具（灰底）負責數字與規則；LLM 只負責白話說明，並經過審查閘門", "Deterministic tools (grey) handle numbers and rules; the LLM only writes plain-language explanations, which pass a review gate")} />
         <div className="p-5"><WorkflowGraph /></div>
       </Card>
-      {!token ? <Card><EmptyState title="登入後可查看 Agent 統計與執行紀錄" /></Card> : (
+      {!token ? <Card><EmptyState title={L("登入後可查看 Agent 統計與執行紀錄", "Log in to see agent statistics and run history")} /></Card> : (
         <>
           <Card className="overflow-x-auto">
-            <CardHeader title="Agents" desc={agents.data ? `LLM：${agents.data.provider.provider} ${agents.data.provider.model ?? ""}` : undefined} />
+            <CardHeader title="Agents" desc={agents.data ? `LLM${isEn ? ": " : "："}${agents.data.provider.provider} ${agents.data.provider.model ?? ""}` : undefined} />
             {agents.isLoading ? <LoadingBlock /> : agents.error ? <ErrorState error={agents.error} /> : (
               <table className="w-full min-w-[820px] text-[13px]">
                 <thead><tr className="border-b border-line text-left text-ink-3">
-                  <th className="p-3">{t("agent")}</th><th>類型</th><th>{t("model")}</th><th className="text-right">{t("executions")}</th><th className="text-right">{t("successRate")}</th><th className="text-right">{t("avgDuration")}</th><th className="text-right">{t("tokens")}</th><th className="p-3 text-right">{t("cost")}</th>
+                  <th className="p-3">{t("agent")}</th><th>{L("類型", "Type")}</th><th>{t("model")}</th><th className="text-right">{t("executions")}</th><th className="text-right">{t("successRate")}</th><th className="text-right">{t("avgDuration")}</th><th className="text-right">{t("tokens")}</th><th className="p-3 text-right">{t("cost")}</th>
                 </tr></thead>
                 <tbody>
                   {agents.data!.items.map((a) => (
@@ -112,7 +117,7 @@ export function AgentsCenter() {
                   </li>
                 ))}
               </ul>
-            ) : <EmptyState title="尚無執行紀錄" desc="在模擬器按「AI 白話分析」就會建立一筆執行" />}
+            ) : <EmptyState title={L("尚無執行紀錄", "No runs yet")} desc={L("在模擬器按「AI 白話分析」就會建立一筆執行", "Press \"AI plain-language analysis\" in a simulator to create a run")} />}
           </Card>
         </>
       )}
@@ -122,6 +127,7 @@ export function AgentsCenter() {
 
 export function AgentRunView({ id }: { id: string }) {
   const t = useTranslations("agents");
+  const L = useL();
   const q = useQuery({ queryKey: ["agent-run-detail", id], queryFn: () => api<RunDetail>(`/agents/runs/${id}`), refetchInterval: (qq) => (["queued", "running"].includes(qq.state.data?.status ?? "") ? 3000 : false) });
   const cancel = useMutation({ mutationFn: () => api(`/agents/runs/${id}/cancel`, { method: "POST" }), onSuccess: () => q.refetch() });
   const retry = useMutation({ mutationFn: () => api<{ run_id: string }>(`/agents/runs/${id}/retry`, { method: "POST" }) });
@@ -141,11 +147,11 @@ export function AgentRunView({ id }: { id: string }) {
           {["failed", "cancelled"].includes(r.status) ? <Button size="sm" variant="secondary" onClick={() => retry.mutate()}><RotateCcw size={14} />{t("retry")}</Button> : null}
         </div>
       </div>
-      {retry.data ? <Notice tone="normal">已建立新的執行：<Link className="underline" href={`/agents/runs/${retry.data.run_id}`}>{retry.data.run_id.slice(0, 8)}</Link></Notice> : null}
+      {retry.data ? <Notice tone="normal">{L("已建立新的執行：", "New run created: ")}<Link className="underline" href={`/agents/runs/${retry.data.run_id}`}>{retry.data.run_id.slice(0, 8)}</Link></Notice> : null}
       {retry.error ? <ErrorState error={retry.error} /> : null}
       <Card className="p-5"><WorkflowGraph statuses={statuses} /></Card>
       <Card>
-        <CardHeader title="執行時間軸" desc="只顯示可稽核的工具呼叫、資料來源、輸出摘要與驗證結果，不顯示模型的隱藏思考過程" />
+        <CardHeader title={L("執行時間軸", "Run timeline")} desc={L("只顯示可稽核的工具呼叫、資料來源、輸出摘要與驗證結果，不顯示模型的隱藏思考過程", "Shows only auditable tool calls, data sources, output summaries and verification results, not the model's hidden reasoning")} />
         <ol className="space-y-3 p-5">
           {r.tasks.map((tk) => (
             <li key={tk.id} className="rounded-[12px] border border-line p-3 text-[13px]">

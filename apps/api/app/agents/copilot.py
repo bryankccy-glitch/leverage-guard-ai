@@ -12,6 +12,7 @@ import re
 from decimal import Decimal
 from typing import Any
 
+from .. import i18n
 from ..legal_rag.search import search as legal_search
 from ..legal_rules.engine import all_rule_versions
 from . import llm
@@ -89,8 +90,10 @@ def answer(message: str, context: dict[str, Any] | None) -> dict[str, Any]:
               + "可引用的條文（只能引用這些 ID）：\n"
               + "\n".join(f"[{k}] {v['official_title']} {v['article_number']}：{v['content'][:500]}"
                           for k, v in articles.items())
-              + "\n\n規則白話摘要：\n" + "\n".join(f"- {r.rule_name}：{r.plain_language}" for r in rules)
-              + "\n\n請用繁體中文回答，說明條件與不確定性；cited_article_ids 只能填上面方括號內的 ID。")
+              + "\n\n規則白話摘要：\n" + "\n".join(f"- {i18n.tr(r.rule_name)}：{i18n.tr(r.plain_language)}" for r in rules)
+              + ("\n\nAnswer in English, keeping conditions and uncertainty; cited_article_ids may only contain the "
+                 "IDs in square brackets above." if i18n.is_en()
+                 else "\n\n請用繁體中文回答，說明條件與不確定性；cited_article_ids 只能填上面方括號內的 ID。"))
     try:
         r = llm.generate(CopilotAnswer, prompt)
         ans: CopilotAnswer = r.data

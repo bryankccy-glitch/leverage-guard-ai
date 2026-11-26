@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { useL } from "@/lib/i18n";
 import { useMounted } from "@/lib/format";
 import { LogoHorizontal } from "@/components/brand/Logo";
 import { useUI } from "@/stores/auth";
 
 export function PublicNav() {
   const t = useTranslations();
+  const L = useL();
   const [open, setOpen] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
   const locale = useUI((s) => s.locale);
@@ -25,8 +27,8 @@ export function PublicNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-5">
-        <Link href="/" aria-label="LeverageGuard AI 首頁"><LogoHorizontal /></Link>
-        <nav aria-label="主要" className="hidden flex-1 items-center gap-6 text-[14px] text-ink-2 md:flex">
+        <Link href="/" aria-label={L("LeverageGuard AI 首頁", "LeverageGuard AI home")}><LogoHorizontal /></Link>
+        <nav aria-label={L("主要", "Main")} className="hidden flex-1 items-center gap-6 text-[14px] text-ink-2 md:flex">
           {links.map(([href, label]) => <Link key={href} href={href} className="hover:text-ink">{label}</Link>)}
         </nav>
         <div className="ml-auto flex items-center gap-2">
@@ -51,6 +53,7 @@ export function PublicNav() {
 
 export function PublicFooter() {
   const t = useTranslations();
+  const L = useL();
   return (
     <footer className="border-t border-line bg-surface">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 md:grid-cols-4">
@@ -60,9 +63,9 @@ export function PublicFooter() {
           <p className="text-[12px] text-ink-3">{t("common.notAdvice")}</p>
         </div>
         <div>
-          <p className="mb-2 text-[13px] font-semibold text-ink">產品</p>
+          <p className="mb-2 text-[13px] font-semibold text-ink">{L("產品", "Product")}</p>
           <ul className="space-y-1.5 text-[13px] text-ink-2">
-            <li><Link href="/about" className="hover:text-ink">關於</Link></li>
+            <li><Link href="/about" className="hover:text-ink">{L("關於", "About")}</Link></li>
             <li><Link href="/how-it-works" className="hover:text-ink">{t("landing.navHow")}</Link></li>
             <li><Link href="/simulator/margin" className="hover:text-ink">{t("nav.margin")}</Link></li>
             <li><Link href="/simulator/day-trading" className="hover:text-ink">{t("nav.dayTrading")}</Link></li>
@@ -71,18 +74,18 @@ export function PublicFooter() {
         <div>
           <p className="mb-2 text-[13px] font-semibold text-ink">{t("landing.footerSources")}</p>
           <ul className="space-y-1.5 text-[13px] text-ink-2">
-            <li><a href="https://law.moj.gov.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">全國法規資料庫</a></li>
-            <li><a href="https://twse-regulation.twse.com.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">臺灣證券交易所法規分享知識庫</a></li>
-            <li><a href="https://www.foi.org.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">金融消費評議中心</a></li>
-            <li><Link href="/legal-resources" className="hover:text-ink">所有資料來源</Link></li>
+            <li><a href="https://law.moj.gov.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">{L("全國法規資料庫", "Laws & Regulations Database")}</a></li>
+            <li><a href="https://twse-regulation.twse.com.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">{L("臺灣證券交易所法規分享知識庫", "TWSE Regulations Knowledge Base")}</a></li>
+            <li><a href="https://www.foi.org.tw/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">{L("金融消費評議中心", "Financial Ombudsman Institution")}</a></li>
+            <li><Link href="/legal-resources" className="hover:text-ink">{L("所有資料來源", "All data sources")}</Link></li>
           </ul>
         </div>
         <div>
-          <p className="mb-2 text-[13px] font-semibold text-ink">條款與隱私</p>
+          <p className="mb-2 text-[13px] font-semibold text-ink">{L("條款與隱私", "Terms & privacy")}</p>
           <ul className="space-y-1.5 text-[13px] text-ink-2">
-            <li><Link href="/privacy" className="hover:text-ink">隱私政策</Link></li>
-            <li><Link href="/terms" className="hover:text-ink">使用條款</Link></li>
-            <li><span>聯絡：本專案展示用信箱尚未設定</span></li>
+            <li><Link href="/privacy" className="hover:text-ink">{L("隱私政策", "Privacy policy")}</Link></li>
+            <li><Link href="/terms" className="hover:text-ink">{L("使用條款", "Terms of use")}</Link></li>
+            <li><span>{L("聯絡：本專案展示用信箱尚未設定", "Contact: no demo mailbox has been set up for this project")}</span></li>
           </ul>
           <p className="mt-3 text-[12px] text-ink-3">{t("landing.footerLimits")}</p>
         </div>

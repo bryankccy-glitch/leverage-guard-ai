@@ -1,0 +1,113 @@
+{
+ "_note": "規則名稱與白話說明的英文版（非官方翻譯）。法條原文不翻譯。",
+ "rules": {
+  "MARGIN-RATIO-FORMULA": {
+   "name": "How the maintenance ratio is calculated",
+   "plain": "Your broker calculates the maintenance ratio of your credit account every day: collateral value divided by the loan. For a single margin position with no short sales, it is simply \"stock market value ÷ margin loan\"."
+  },
+  "MARGIN-CALL-THRESHOLD": {
+   "name": "Account-level maintenance ratio call threshold",
+   "plain": "When the account-level maintenance ratio falls below 130%, the broker must notify you to top up the shortfall."
+  },
+  "MARGIN-CALL-DEADLINE": {
+   "name": "Top-up deadline",
+   "plain": "The top-up deadline is two business days counted from the date the notice is delivered. Without the exact delivery date, the correct deadline cannot be calculated."
+  },
+  "MARGIN-CALL-AMOUNT": {
+   "name": "Margin top-up amount",
+   "plain": "Amount to top up = margin loan − (closing price on the calculation date × financed shares × financing ratio) − (substitute collateral value × financing ratio)."
+  },
+  "MARGIN-CALL-CANCEL": {
+   "name": "Cancelling the margin call",
+   "plain": "The margin call is cancelled once the maintenance ratio returns to 166% or above, or once your top-ups reach the amount in the notice."
+  },
+  "MARGIN-DISPOSAL-CONDITION": {
+   "name": "Collateral disposal when unpaid and still below threshold",
+   "plain": "If you do not top up by the deadline and the ratio is still below 130% on the deadline, the broker will sell your collateral from the next business day (forced liquidation)."
+  },
+  "MARGIN-DISPOSAL-DEFERRED": {
+   "name": "Disposal may be deferred if the ratio recovers on the deadline",
+   "plain": "If the ratio is back at 130% or above on the deadline, the broker \"may\" hold off on disposal; but if it falls short again on any later business day and is not topped up that afternoon, disposal still starts the next business day. The margin call is not cancelled."
+  },
+  "MARGIN-DISPOSAL-SURPLUS": {
+   "name": "Surplus after disposal returned",
+   "plain": "If anything is left after the collateral is sold and the debt repaid, the remainder must be returned to you."
+  },
+  "MARGIN-DISPOSAL-SHORTFALL": {
+   "name": "Shortfall after disposal: offset and top-up notice",
+   "plain": "If the sale does not cover the loan, the broker first offsets it with other funds in your credit account, then notifies you to pay the rest by the next business day. Losing your whole principal does not end the debt."
+  },
+  "MARGIN-LIQUIDITY-FAILURE": {
+   "name": "Unable to fully execute for six consecutive business days",
+   "plain": "If the market is illiquid and the broker's disposal orders cannot be fully filled for six consecutive business days, it offsets with other funds in your account and notifies you to pay the rest."
+  },
+  "MARGIN-DEFAULT-REPORT": {
+   "name": "Overdue repayment: default reported",
+   "plain": "If you still have not repaid after the shortfall notice, the broker sets a repayment deadline; if that passes, the broker must report a default and close the credit account. Whether it is actually reported depends on the broker's practice."
+  },
+  "MARGIN-PENALTY": {
+   "name": "Margin default penalty",
+   "plain": "After a default, the broker \"may\" charge a penalty from the default date to the repayment date, at 10% of the margin interest rate applied to the shortfall."
+  },
+  "MARGIN-NO-WITHDRAW-GAINS": {
+   "name": "Unrealised gains cannot be withdrawn",
+   "plain": "When rising prices increase your account's net value, the broker cannot pay out the increase to you or count it toward your own contribution."
+  },
+  "MARGIN-CONTRACT-REQUIRED": {
+   "name": "Margin contract and credit account",
+   "plain": "Margin trading requires signing a margin purchase and short sale contract with the broker and opening a credit account; the call ratio, deadlines and disposal method must all be in the contract."
+  },
+  "TAX-GENERAL": {
+   "name": "Securities transaction tax on stocks (general)",
+   "plain": "When stock is sold, the seller pays securities transaction tax of 0.3% of the transaction price."
+  },
+  "TAX-DAYTRADE": {
+   "name": "Securities transaction tax on cash day trades (0.15%)",
+   "plain": "For a cash day trade of the same stock and quantity in the same account on the same day, the tax on the sale is 0.15% until 31 December 2027; unless extended, it then returns to 0.3%."
+  },
+  "DT-DEFINITION": {
+   "name": "Day trading definition and net settlement",
+   "plain": "Day trading means buying and selling the same stock on the same day; matching quantities offset each other and only the price difference is settled."
+  },
+  "DT-ELIGIBILITY": {
+   "name": "Day trading eligibility and risk disclosure",
+   "plain": "To day trade, your account generally must be open for three months with at least ten trades in the past year, and you must sign a general authorization and a risk disclosure statement."
+  },
+  "DT-REPORTING": {
+   "name": "Broker reports the offset",
+   "plain": "The broker must report the offset by 6 p.m. on the trade date; if it is not reported, the trade is treated as not offset and settled in full."
+  },
+  "DT-UNMATCHED-LONG": {
+   "name": "Bought but not sold: normal settlement",
+   "plain": "Only matching quantities offset. Shares bought and not sold must be settled at the full price."
+  },
+  "DT-SELL-FIRST-BUYIN": {
+   "name": "Sold first but not bought back: borrowing and forced buy-in",
+   "plain": "If you sell first and do not buy back, the broker lends you shares to settle and forces a buy-in on the next business day after the trade date."
+  },
+  "DT-SELL-FIRST-COSTS": {
+   "name": "Who bears forced buy-in costs, and the payment deadline",
+   "plain": "Borrowing fees, the buy-in price difference and other costs are yours, payable by 5 p.m. on the business day after the buy-in; late payment is treated as a default. The borrowing fee is capped at 7% of the closing price."
+  },
+  "DT-LOSS-SUSPENSION": {
+   "name": "Day trading suspended when losses reach half the limit",
+   "plain": "If your cumulative day trading losses last month reached half of your limit, the broker must suspend your day trading eligibility."
+  },
+  "DT-SETTLEMENT-CYCLE": {
+   "name": "Regular settlement cycle (T+2, source text not yet imported)",
+   "plain": "Settlement is commonly understood to be the second business day after the trade date (T+2). The TWSE Operating Rules text has not been imported yet, so this deadline is unverified."
+  },
+  "DT-FUNDING-GAP": {
+   "name": "Insufficient settlement funds (estimate)",
+   "plain": "Funds available before the settlement date look insufficient. This is only an estimate: topping up before settlement solves it. Whether non-performance on settlement day is a settlement default, and what follows, depends on TWSE rules and your brokerage contract, which have not been imported yet."
+  },
+  "GENERAL-DISPUTE": {
+   "name": "Financial consumer disputes: complain first, then seek mediation",
+   "plain": "If you dispute how the broker handled something, complain to the broker first; if it does not respond within 30 days or you reject the outcome, you can apply to the Financial Ombudsman Institution within 60 days."
+  },
+  "MARGIN-CALL-THRESHOLD@demo": {
+   "name": "[Demo] Hypothetical threshold change to 140%",
+   "plain": "This is a fictional regulatory change used to demonstrate rule version differences and recalculation. The current rule is still 130%."
+  }
+ }
+}

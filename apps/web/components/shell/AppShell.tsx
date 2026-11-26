@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { useState, type ReactNode } from "react";
+import { useL, demoSwap } from "@/lib/i18n";
 import { LogoHorizontal, LogoMark } from "@/components/brand/Logo";
 import { api } from "@/lib/api";
 import { cn, useMounted } from "@/lib/format";
@@ -56,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function AppShellInner({ children }: { children: ReactNode }) {
   const t = useTranslations();
+  const L = useL();
   const pathname = usePathname();
   const collapsed = useUI((s) => s.sidebarCollapsed);
   const toggle = useUI((s) => s.toggleSidebar);
@@ -114,9 +116,9 @@ function AppShellInner({ children }: { children: ReactNode }) {
     href === "/legal" ? pathname === "/legal" || pathname.startsWith("/legal/search") || pathname.startsWith("/legal/regulations") : pathname === href || pathname.startsWith(`${href}/`);
 
   const sidebar = (mobile: boolean) => (
-    <nav aria-label="主選單" className={cn("flex h-full flex-col rounded-[16px] border border-line bg-surface p-3 shadow-card", !mobile && collapsed ? "w-[68px]" : "w-[248px]")}>
+    <nav aria-label={L("主選單", "Main menu")} className={cn("flex h-full flex-col rounded-[16px] border border-line bg-surface p-3 shadow-card", !mobile && collapsed ? "w-[68px]" : "w-[248px]")}>
       <div className={cn("mb-4 flex items-center px-1 pt-1", collapsed && !mobile ? "flex-col gap-3" : "justify-between")}>
-        <Link href="/" aria-label="LeverageGuard AI 首頁">{collapsed && !mobile ? <LogoMark size={30} /> : <LogoHorizontal />}</Link>
+        <Link href="/" aria-label={L("LeverageGuard AI 首頁", "LeverageGuard AI home")}>{collapsed && !mobile ? <LogoMark size={30} /> : <LogoHorizontal />}</Link>
         {mobile ? (
           <button onClick={() => setMobileOpen(false)} aria-label={t("common.close")} className="rounded-[8px] p-2 text-ink-2 hover:bg-surface-muted">
             <X size={18} />
@@ -241,10 +243,10 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           </IconButton>
           {mounted && user ? (
             <DropdownMenu.Root>
-              <DropdownMenu.Trigger className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-2 hover:bg-surface-muted md:pr-3" aria-label={user.display_name}>
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-soft text-[13px] font-semibold text-brand">{user.display_name.slice(0, 1)}</span>
+              <DropdownMenu.Trigger className="flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-2 hover:bg-surface-muted md:pr-3" aria-label={demoSwap(user.display_name, locale === "en")}>
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-soft text-[13px] font-semibold text-brand">{demoSwap(user.display_name, locale === "en").slice(0, 1)}</span>
                 <span className="hidden text-left leading-tight md:block">
-                  <span className="block text-[13px] font-medium text-ink">{user.display_name}</span>
+                  <span className="block text-[13px] font-medium text-ink">{demoSwap(user.display_name, locale === "en")}</span>
                   <span className="block text-[11px] text-ink-3">{t(`shell.roles.${user.role}`)}</span>
                 </span>
                 <ChevronDown size={14} className="text-ink-3" />
@@ -319,6 +321,7 @@ function Breadcrumb() {
 
 function MobileBottomNav() {
   const t = useTranslations("nav");
+  const L = useL();
   const pathname = usePathname();
   const items = [
     { href: "/dashboard", label: t("dashboard"), icon: <LayoutGrid size={18} /> },
@@ -327,7 +330,7 @@ function MobileBottomNav() {
     { href: "/legal", label: t("legal"), icon: <BookOpenText size={18} /> },
   ];
   return (
-    <nav aria-label="快速導覽" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface md:hidden">
+    <nav aria-label={L("快速導覽", "Quick navigation")} className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface md:hidden">
       {items.map((it) => (
         <Link key={it.href} href={it.href} aria-current={pathname.startsWith(it.href) ? "page" : undefined} className={cn("flex flex-col items-center gap-0.5 py-2 text-[11px]", pathname.startsWith(it.href) ? "text-brand" : "text-ink-3")}>
           {it.icon}

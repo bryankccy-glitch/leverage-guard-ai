@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { demoSwap, useIsEn, useL } from "@/lib/i18n";
 import { Badge, Button, Card, CardHeader, EmptyState, ErrorState, Field, Input, LoadingBlock, Notice, NumberField, Select, SimBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtMoney, fmtNum } from "@/lib/format";
@@ -15,15 +16,18 @@ type Account = { id: string; name: string; account_type: string; cash_balance: s
 
 export function DigitalTwin() {
   const t = useTranslations("twin");
+  const L = useL();
   const locale = useLocale();
   const token = useAuth((s) => s.token);
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["accounts", token], queryFn: () => api<{ items: Account[] }>("/accounts"), enabled: !!token });
   const refresh = () => qc.invalidateQueries({ queryKey: ["accounts"] });
-  const [name, setName] = useState("我的模擬融資帳戶");
+  const [nameState, setName] = useState("我的模擬融資帳戶");
+  const isEn = useIsEn();
+  const name = demoSwap(nameState, isEn);
   const [type, setType] = useState("margin");
   const create = useMutation({ mutationFn: () => api("/accounts", { body: { name, account_type: type, cash_balance: "0" } }), onSuccess: refresh });
-  if (!token) return <Card><EmptyState title="登入後可以建立虛擬帳戶" /></Card>;
+  if (!token) return <Card><EmptyState title={L("登入後可以建立虛擬帳戶", "Log in to create a virtual account")} /></Card>;
   if (q.isLoading) return <Card><LoadingBlock rows={6} /></Card>;
   if (q.error) return <Card><ErrorState error={q.error} /></Card>;
   return (
@@ -50,8 +54,11 @@ export function DigitalTwin() {
 function AccountCard({ a, onChange, locale }: { a: Account; onChange: () => void; locale: string }) {
   const t = useTranslations("twin");
   const tm = useTranslations("dashboard");
+  const L = useL();
   const ratio = a.financial_state.account_ratio?.account_maintenance_ratio?.value;
-  const [np, setNp] = useState({ asset_label: "示範股票（虛構）", quantity: "1000", entry_price: "50", simulated_price: "50", financing_ratio: "0.6", interest_rate: "0.0645" });
+  const [npState, setNp] = useState({ asset_label: "示範股票（虛構）", quantity: "1000", entry_price: "50", simulated_price: "50", financing_ratio: "0.6", interest_rate: "0.0645" });
+  const isEn = useIsEn();
+  const np = { ...npState, asset_label: demoSwap(npState.asset_label, isEn) };
   const add = useMutation({ mutationFn: () => api(`/accounts/${a.id}/positions`, { body: { ...np, trading_type: a.account_type === "cash" ? "cash" : "margin" } }), onSuccess: onChange });
   const patch = useMutation({ mutationFn: ({ id, price }: { id: string; price: string }) => api(`/positions/${id}`, { method: "PATCH", body: { simulated_price: price } }), onSuccess: onChange });
   const del = useMutation({ mutationFn: (id: string) => api(`/positions/${id}`, { method: "DELETE" }), onSuccess: onChange });
@@ -71,14 +78,14 @@ function AccountCard({ a, onChange, locale }: { a: Account; onChange: () => void
           <div key={k} className="rounded-[10px] border border-line p-3 text-[13px]">
             <p className="font-semibold text-ink">{t(`states.${k}`)}</p>
             <p className="mt-1 text-ink-2">
-              {k === "financial" ? `${a.positions.length} 個部位` : k === "legal" ? (below ? "整戶維持率低於 130%：模擬中符合補繳通知條件" : "目前未觸發法律事件") : k === "contract" ? t("noContract") : <Link className="text-blue underline" href="/scenarios/new">在實驗室推演時間軸</Link>}
+              {k === "financial" ? L(`${a.positions.length} 個部位`, `${a.positions.length} position(s)`) : k === "legal" ? (below ? L("整戶維持率低於 130%：模擬中符合補繳通知條件", "Account ratio below 130%: meets margin call notice conditions in the simulation") : L("目前未觸發法律事件", "No legal events triggered")) : k === "contract" ? t("noContract") : <Link className="text-blue underline" href="/scenarios/new">{L("在實驗室推演時間軸", "Play out the timeline in the lab")}</Link>}
             </p>
           </div>
         ))}
       </div>
       <div className="overflow-x-auto p-5">
         <table className="w-full min-w-[720px] text-[13px]">
-          <thead><tr className="border-b border-line text-left text-ink-3"><th className="py-2">{t("positions")}</th><th className="text-right">股數</th><th className="text-right">{t("entry")}</th><th className="text-right">{t("simPrice")}</th><th className="text-right">{t("principal")}</th><th className="text-right">未實現損益</th><th /></tr></thead>
+          <thead><tr className="border-b border-line text-left text-ink-3"><th className="py-2">{t("positions")}</th><th className="text-right">{L("股數", "Shares")}</th><th className="text-right">{t("entry")}</th><th className="text-right">{t("simPrice")}</th><th className="text-right">{t("principal")}</th><th className="text-right">{L("未實現損益", "Unrealised P&L")}</th><th /></tr></thead>
           <tbody>
             {a.positions.map((p) => {
               const pnl = (Number(p.simulated_price) - Number(p.entry_price)) * Number(p.quantity);
@@ -90,7 +97,7 @@ function AccountCard({ a, onChange, locale }: { a: Account; onChange: () => void
                   <td className="text-right"><input aria-label={`${p.asset_label} ${t("simPrice")}`} defaultValue={Number(p.simulated_price)} type="number" step="0.5" className="num h-8 w-24 rounded-[6px] border border-line bg-surface px-2 text-right" onBlur={(e) => e.target.value && e.target.value !== String(Number(p.simulated_price)) && patch.mutate({ id: p.id, price: e.target.value })} /></td>
                   <td className="num text-right">{fmtMoney(p.financing_principal, locale)}</td>
                   <td className={cn("num text-right", pnl < 0 ? "text-critical" : "text-ink")}>{fmtMoney(String(pnl), locale)}</td>
-                  <td className="text-right"><button aria-label="刪除部位" onClick={() => del.mutate(p.id)} className="rounded p-1 text-ink-3 hover:text-critical"><Trash2 size={14} /></button></td>
+                  <td className="text-right"><button aria-label={L("刪除部位", "Delete position")} onClick={() => del.mutate(p.id)} className="rounded p-1 text-ink-3 hover:text-critical"><Trash2 size={14} /></button></td>
                 </tr>
               );
             })}
@@ -98,11 +105,11 @@ function AccountCard({ a, onChange, locale }: { a: Account; onChange: () => void
         </table>
         {patch.error || del.error || add.error ? <ErrorState error={patch.error ?? del.error ?? add.error} /> : null}
         <div className="mt-4 grid gap-2 rounded-[12px] bg-surface-muted p-3 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] md:items-end">
-          <Field label="名稱" htmlFor={`np-${a.id}`}><Input id={`np-${a.id}`} value={np.asset_label} onChange={(e) => setNp({ ...np, asset_label: e.target.value })} /></Field>
-          <NumberField label="股數" value={np.quantity} onChange={(v) => setNp({ ...np, quantity: v })} step="1" />
+          <Field label={L("名稱", "Name")} htmlFor={`np-${a.id}`}><Input id={`np-${a.id}`} value={np.asset_label} onChange={(e) => setNp({ ...np, asset_label: e.target.value })} /></Field>
+          <NumberField label={L("股數", "Shares")} value={np.quantity} onChange={(v) => setNp({ ...np, quantity: v })} step="1" />
           <NumberField label={t("entry")} value={np.entry_price} onChange={(v) => setNp({ ...np, entry_price: v })} />
           <NumberField label={t("simPrice")} value={np.simulated_price} onChange={(v) => setNp({ ...np, simulated_price: v })} />
-          <NumberField label="融資比例" value={np.financing_ratio} onChange={(v) => setNp({ ...np, financing_ratio: v })} />
+          <NumberField label={L("融資比例", "Financing ratio")} value={np.financing_ratio} onChange={(v) => setNp({ ...np, financing_ratio: v })} />
           <Button onClick={() => add.mutate()} disabled={add.isPending}><Plus size={14} />{t("newPosition")}</Button>
         </div>
       </div>

@@ -25,6 +25,7 @@ from typing import Any
 
 from sqlalchemy import text
 
+from .. import i18n
 from ..core.config import get_settings
 from ..core.db import one, rows, service_session
 from ..legal_rag.search import search as legal_search
@@ -120,7 +121,9 @@ def create_run(user_id: str | None, workflow: str, payload: dict[str, Any], scen
                contract_id: str | None = None) -> tuple[str, bool]:
     """建立 run；相同輸入、規則版本與模型已完成過就直接重用（快取＋去重）。回傳 (run_id, cached)。"""
     info = llm.provider_info()
-    h = input_hash({"w": workflow, "p": payload, "m": info, "u": user_id, "pv": PROMPT_VERSION})
+    # 語系不同的說明不能共用快取
+    h = input_hash({"w": workflow, "p": payload, "m": info, "u": user_id, "pv": PROMPT_VERSION,
+                    "loc": i18n.get_locale()})
     with service_session() as conn:
         hit = one(conn, """select id::text from agent_runs where input_hash = :h and status = 'completed'
                            and created_at > now() - interval '1 day' order by created_at desc limit 1""", h=h)
@@ -172,7 +175,18 @@ def _allowed_numbers(result: dict[str, Any]) -> set[str]:
 
 
 def run_simulation_analysis(run_id: str, trading_type: str, body: dict[str, Any],
-                            contract_id: str | None = None, status_overrides: dict[str, str] | None = None) -> None:
+                            contract_id: str | None = None, status_overrides: dict[str, str] | None = None,
+                            locale: str = "zh-TW") -> None:
+    """背景執行時 ContextVar 不一定會跟過來，所以語系由呼叫端明確傳入。"""
+    token = i18n.set_locale(locale)
+    try:
+        _run_simulation_analysis(run_id, trading_type, body, contract_id, status_overrides)
+    finally:
+        i18n.reset_locale(token)
+
+
+def _run_simulation_analysis(run_id: str, trading_type: str, body: dict[str, Any],
+                             contract_id: str | None = None, status_overrides: dict[str, str] | None = None) -> None:
     from ..schemas.calc import DayTradeCalcIn, MarginScenarioIn
     from ..services import calc_service
 
@@ -257,12 +271,21 @@ def run_simulation_analysis(run_id: str, trading_type: str, body: dict[str, Any]
                        "條件": n["trigger_condition"], "影響": n["financial_impact"],
                        "規則說明": (n.get("plain_language") or "")[:220]}
                       for n in result["timeline"] if n["event_type"] != "price_change"][:12]
-            prompt = ("請把下列『已驗證的模擬結果』改寫成一般投資人看得懂的繁體中文。"
-                      "只能使用下面出現過的數字與規則說明，不可新增數字、法條或推論；不可給買賣建議；"
-                      "event_explanations 的 event_type 必須照抄。\n"
-                      + json.dumps({"關鍵數字": key, "事件": events, "假設": result["assumptions"][:4]},
-                                   ensure_ascii=False, default=str)
-                      + ("\n\n使用者契約相關條款（原文，僅供引用）：\n"
+            data = {"關鍵數字": key, "事件": events, "假設": result["assumptions"][:4]}
+            if i18n.is_en():
+                prompt = ("Rewrite the following verified simulation results in plain English that an ordinary "
+                          "investor can understand. Use only the numbers and rule explanations below; do not add "
+                          "numbers, legal articles or inferences; give no trading advice; copy each "
+                          "event_explanations event_type exactly.\n"
+                          + json.dumps(i18n.translate(data), ensure_ascii=False, default=str))
+            else:
+                prompt = ("請把下列『已驗證的模擬結果』改寫成一般投資人看得懂的繁體中文。"
+                          "只能使用下面出現過的數字與規則說明，不可新增數字、法條或推論；不可給買賣建議；"
+                          "event_explanations 的 event_type 必須照抄。\n"
+                          + json.dumps(data, ensure_ascii=False, default=str))
+            prompt = (prompt
+                      + (("\n\nRelevant clauses from the user's contract (original text, for citation only):\n"
+                          if i18n.is_en() else "\n\n使用者契約相關條款（原文，僅供引用）：\n")
                          + llm.untrusted("\n".join(c["original_text"] for c in contract_findings), 3000)
                          if contract_findings else ""))
             try:

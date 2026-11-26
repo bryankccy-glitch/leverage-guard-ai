@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Badge, EventStatus } from "@/components/ui";
 import { cn, fmtDate, fmtNum } from "@/lib/format";
+import { articleLabel, authorityLabel, lawTitle, useIsEn, useL } from "@/lib/i18n";
 import type { Citation, TimelineNode } from "./types";
 
 const NEUTRAL = new Set(["position_opened", "price_change", "trade_executed", "top_up_paid", "offset_reported"]);
@@ -19,10 +20,11 @@ const DOT: Record<string, string> = {
 };
 
 export function Timeline({ nodes, upTo, compact }: { nodes: TimelineNode[]; upTo?: number; compact?: boolean }) {
+  const L = useL();
   const shown = upTo === undefined ? nodes : nodes.filter((n) => n.step <= upTo);
   const items = compact ? shown.filter((n) => n.event_type !== "price_change") : shown;
   return (
-    <ol className="relative space-y-3 before:absolute before:bottom-2 before:left-[11px] before:top-2 before:w-px before:bg-line" aria-label="法律責任時間軸">
+    <ol className="relative space-y-3 before:absolute before:bottom-2 before:left-[11px] before:top-2 before:w-px before:bg-line" aria-label={L("法律責任時間軸", "Legal responsibility timeline")}>
       {items.map((n, i) => (
         <motion.li key={n.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.3) }} className="relative pl-8">
           <span aria-hidden className={cn("absolute left-[6px] top-3 h-3 w-3 rounded-full ring-4 ring-surface", NEUTRAL.has(n.event_type) ? "bg-blue" : (DOT[n.status] ?? "bg-unknown"))} />
@@ -58,14 +60,14 @@ function TimelineCard({ n }: { n: TimelineNode }) {
             <Row label={t("impact")}>
               <span className="num flex flex-wrap gap-x-4 gap-y-1">
                 {Object.entries(n.financial_impact).map(([k, v]) => (
-                  <span key={k}>{k}：<b className="text-ink">{fmtNum(v, locale)}</b></span>
+                  <span key={k}>{k}{locale === "en" ? ": " : "："}<b className="text-ink">{fmtNum(v, locale)}</b></span>
                 ))}
               </span>
             </Row>
           ) : null}
           {n.deadline ? (
             <Row label={t("deadline")}>
-              <span className="flex items-center gap-1.5"><CalendarClock size={14} aria-hidden /> <b className="num">{fmtDate(n.deadline, locale)}</b>{n.deadline_note ? <span className="text-ink-3">（{n.deadline_note}）</span> : null}</span>
+              <span className="flex items-center gap-1.5"><CalendarClock size={14} aria-hidden /> <b className="num">{fmtDate(n.deadline, locale)}</b>{n.deadline_note ? <span className="text-ink-3">{locale === "en" ? ` (${n.deadline_note})` : `（${n.deadline_note}）`}</span> : null}</span>
             </Row>
           ) : null}
           {n.plain_language ? <p className="whitespace-pre-line rounded-[8px] bg-brand-soft px-3 py-2 text-ink">{n.plain_language}</p> : null}
@@ -92,17 +94,19 @@ function TimelineCard({ n }: { n: TimelineNode }) {
 
 export function CitationItem({ c }: { c: Citation }) {
   const t = useTranslations("timeline");
+  const isEn = useIsEn();
   return (
     <li className="rounded-[8px] border border-line px-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-ink">{c.official_title} {c.article_number}</span>
+        <span className="font-medium text-ink">{lawTitle(c.source_key, c.official_title, isEn)} {articleLabel(c.article_number, isEn)}</span>
         <Badge tone={c.validated ? "normal" : "critical"} icon={<BadgeCheck size={12} aria-hidden />}>{c.validated ? t("quoteValidated") : t("quoteFailed")}</Badge>
         <span className="num text-[11px] text-ink-3">v{c.version}</span>
         <a href={c.official_url} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 text-[12px] text-blue hover:underline">
-          {c.authority} <ExternalLink size={11} aria-hidden />
+          {authorityLabel(c.authority, isEn)} <ExternalLink size={11} aria-hidden />
         </a>
       </div>
-      <blockquote className="mt-1 border-l-2 border-brand pl-2 text-[12.5px] text-ink-2">「{c.quote}」</blockquote>
+      {isEn ? <p className="mt-1 text-[11px] text-ink-3">Original text (Traditional Chinese)</p> : null}
+      <blockquote lang="zh-Hant-TW" className="mt-1 border-l-2 border-brand pl-2 text-[12.5px] text-ink-2">「{c.quote}」</blockquote>
     </li>
   );
 }
