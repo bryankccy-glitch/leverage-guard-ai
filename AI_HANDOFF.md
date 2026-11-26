@@ -162,3 +162,11 @@ cd apps/api && .venv/bin/python -m pytest -q
 
 - 驗證程序以環境變數明確指定本機資料庫與本機驗證模式，不讀取或寫入正式資料庫。已清除本次新增的驗證暫存情境，並停止本次啟動的 8811 API、3002 前端；既有 8810 程序未動。
 - 未解決限制：日曆資料未涵蓋的年度仍只排除週末，期限保留既有不確定性提示；規則尚待人工審查。建置有既有 `metadataBase` 提醒，pytest 有套件棄用提醒，均未造成驗收失敗。
+
+### 部署紀錄（2026-11-26 晚，使用者同意 commit、正式資料庫新增與部署）
+- commit `57988ee`（當沖法源補完）、`b54d7d1`（CI 修正）已推上 GitHub。CI：`b54d7d1` api／web 皆 success（先前 web 失敗是 tsc 在 Next.js 產生 `LayoutProps` 型別前執行，已在 CI 加 `npx next typegen`；api 失敗是英文測試只檢查第一筆模擬、示範情境 A 的「第一～四階段」未翻譯，已補翻譯並改為逐筆檢查）。
+- 正式資料庫（Supabase `cxkcomcsnrcgkmdecsml`）：只執行 `seed_legal()`、`seed_rules()`，**沒有**執行 `main()`（避免在正式站建立示範帳號）。結果：新增 1 份文件（營業細則）、270 條、433 區塊、2 個規則版本；其餘資料未變。
+- Vercel（帳號 bryankccy-2499，`npx vercel --global-config ~/.vercel-leverageguard`；本機 PATH 沒有 `vercel`）：API 由 `deploy/build_api.sh` 打包後部署（打包會刪掉 `.tmp/deploy-api/.vercel`，部署前要先備份再放回）；前端在 `apps/web` 部署。
+- 部署後檢查 PASS：health 200；法規 9 份含營業細則；當沖試算使用 DT-SETTLEMENT-CYCLE／DT-FUNDING-GAP 1.0.0，引用第57、82、91條，無「待匯入」字樣；英文版無中文殘留（條文原文欄位除外）；未登入 /simulations 401；前端首頁與 /simulator/day-trading 200。
+- NOT RUN：瀏覽器實際點擊選單中的當沖入口（瀏覽器擴充未連線）；規則人工法律審查（兩條新版仍為 pending_review）。
+- 回復：Vercel 兩個專案 Promote 上一版；資料庫新增的文件與規則版本不影響舊版程式。
