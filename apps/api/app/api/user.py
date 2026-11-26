@@ -32,6 +32,14 @@ from ..services.rule_status import status_overrides
 router = APIRouter()
 
 
+def _schedule(background: BackgroundTasks, fn, *args) -> None:  # noqa: ANN001
+    """本機：背景執行；serverless：在請求內同步完成（回應前函式不能被凍結）。"""
+    if get_settings().agent_execution == "inline":
+        fn(*args)
+    else:
+        background.add_task(fn, *args)
+
+
 def _jsonable(r: dict[str, Any] | None) -> dict[str, Any] | None:
     if r is None:
         return None
@@ -174,7 +182,7 @@ def explain(sid: str, user: CurrentUser, background: BackgroundTasks, contract_i
                                          {"t": ttype, "p": s["input_parameters"], "c": contract_id,
                                           "rv": s["rule_version_label"]}, scenario_id=sid, contract_id=contract_id)
     if not cached:
-        background.add_task(workflow.run_simulation_analysis, run_id, ttype, s["input_parameters"], contract_id,
+        _schedule(background, workflow.run_simulation_analysis, run_id, ttype, s["input_parameters"], contract_id,
                             status_overrides())
     return {"run_id": run_id, "cached": cached}
 
@@ -203,7 +211,7 @@ def agents_run(body: AgentRunIn, user: CurrentUser, background: BackgroundTasks)
                                          {"t": body.trading_type, "p": body.input_parameters, "c": body.contract_id},
                                          contract_id=body.contract_id)
     if not cached:
-        background.add_task(workflow.run_simulation_analysis, run_id, body.trading_type, body.input_parameters,
+        _schedule(background, workflow.run_simulation_analysis, run_id, body.trading_type, body.input_parameters,
                             body.contract_id, status_overrides())
     return {"run_id": run_id, "cached": cached}
 
@@ -503,7 +511,7 @@ def contract_file(cid: str, sig: str) -> Response:
         c = one(conn, "select storage_path, mime_type, document_name from contracts where id::text = :i", i=cid)
     if c is None:
         raise ApiError(404, "not_found", "找不到契約")
-    data = contracts.storage_path(c["storage_path"]).read_bytes()
+    data = contracts.read_file(c["storage_path"])
     return Response(data, media_type=c["mime_type"], headers={"Content-Disposition": "inline",
                                                               "Cache-Control": "private, no-store"})
 
@@ -515,7 +523,7 @@ def analyze_contract_now(cid: str, user_id: str) -> None:
                 i=cid, u=user_id)
         conn.execute(text("update contracts set status='analyzing' where id::text = :i"), {"i": cid})
     try:
-        data = contracts.storage_path(c["storage_path"]).read_bytes()
+        data = contracts.read_file(c["storage_path"])
         pages, notes = contracts.extract_pages(data, c["mime_type"])
         has_text = any(p.strip() for p in pages)
         base = contracts.deterministic(pages) if has_text else {"clauses": [], "not_found_categories": [], "pii_redacted": {}}
@@ -557,7 +565,7 @@ def analyze_contract(cid: str, user: CurrentUser, background: BackgroundTasks, r
     with user_session(user.claims) as conn:
         if not one(conn, "select id from contracts where id::text = :i and user_id = auth.uid()", i=cid):
             raise ApiError(404, "not_found", "找不到契約")
-    background.add_task(analyze_contract_now, cid, user.id)
+    _schedule(background, analyze_contract_now, cid, user.id)
     audit(request, user.id, "contract.analyze", "contract", cid)
     return {"status": "analyzing"}
 
@@ -584,7 +592,7 @@ def delete_contract(cid: str, user: CurrentUser, request: Request) -> Response:
     with service_session() as conn:
         still = one(conn, "select 1 as x from contracts where storage_path = :p", p=c["storage_path"])
     if not still:
-        contracts.storage_path(c["storage_path"]).unlink(missing_ok=True)
+        contracts.delete_file(c["storage_path"])
     audit(request, user.id, "contract.delete", "contract", cid)
     return Response(status_code=204)
 
@@ -598,7 +606,7 @@ def add_demo_contract(user: CurrentUser, background: BackgroundTasks) -> dict:
         c = one(conn, """insert into contracts (user_id, document_name, broker_name, storage_path, mime_type, size_bytes,
                            document_hash, is_demo) values (auth.uid(), '虛構示範融資融券契約.pdf', '示範證券（虛構）', :p,
                            'application/pdf', :s, :h, true) returning id::text""", p=rel, s=len(data), h=h)
-    background.add_task(analyze_contract_now, c["id"], user.id)
+    _schedule(background, analyze_contract_now, c["id"], user.id)
     return {"id": c["id"]}
 
 

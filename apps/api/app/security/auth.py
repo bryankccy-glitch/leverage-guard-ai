@@ -64,11 +64,15 @@ def _decode(token: str) -> dict[str, Any]:
 
 def ensure_profile(user_id: str, email: str, display_name: str, role: str = "investor") -> None:
     """建立 auth.users 與 profiles（只在本機模式或首次登入時）。"""
+    from sqlalchemy import text
+
+    from ..core.db import engine
+    if get_settings().auth_mode == "local":
+        # auth.users 由資料庫擁有者寫入（Supabase 上 service_role 沒有這張表的寫入權）
+        with engine().begin() as conn:
+            conn.execute(text("""insert into auth.users (id, email, aud, role) values (:i, :e, 'authenticated', 'authenticated')
+                                 on conflict (id) do nothing"""), {"i": user_id, "e": email})
     with service_session() as conn:
-        from sqlalchemy import text
-        if get_settings().auth_mode == "local":
-            conn.execute(text("insert into auth.users (id, email) values (:i, :e) on conflict (id) do nothing"),
-                         {"i": user_id, "e": email})
         conn.execute(text("""insert into profiles (id, email, display_name, role) values (:i, :e, :n, :r)
                              on conflict (id) do nothing"""), {"i": user_id, "e": email, "n": display_name, "r": role})
 

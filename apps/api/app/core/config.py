@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     demo_mode: bool = True
+    web_url: str = "http://localhost:3000"
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     database_url: str = "postgresql+psycopg://leverage:leverage_local_dev@127.0.0.1:54330/leverage"
 
@@ -34,7 +35,11 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 180.0
 
     redis_url: str | None = None
-    storage_dir: Path = ROOT / "apps" / "api" / "var" / "storage"
+    # 雲端 serverless（Vercel）：資料庫不用連線池、檔案存資料庫、Agent 在請求內同步完成
+    serverless: bool = False
+    storage_backend: str = "local"  # local | db
+    agent_execution: str = "background"  # background | inline
+    storage_dir: Path = ROOT / "apps" / "api" / "var" / "storage"  # serverless 請設為 /tmp/lg-storage
     max_upload_size: int = 10 * 1024 * 1024
     max_agent_iterations: int = 8
     max_analysis_cost: float = 0.5

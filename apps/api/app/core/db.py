@@ -13,13 +13,20 @@ from typing import Any
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.pool import NullPool
 
 from .config import get_settings
 
 
 @lru_cache
 def engine() -> Engine:
-    return create_engine(get_settings().database_url, pool_pre_ping=True, pool_size=5, max_overflow=10)
+    url = get_settings().database_url
+    if url.startswith("postgresql://") or url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url.split("://", 1)[1]
+    if get_settings().serverless:
+        # Serverless＋Supabase transaction pooler：不保留連線池、不使用 prepared statements
+        return create_engine(url, poolclass=NullPool, connect_args={"prepare_threshold": None})
+    return create_engine(url, pool_pre_ping=True, pool_size=5, max_overflow=10)
 
 
 @contextmanager

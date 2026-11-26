@@ -5,6 +5,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from .api import admin, public, user
 from .core import errors, middleware
@@ -24,3 +25,9 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_credent
 errors.install(app)
 for r in (public.router, user.router, admin.router):
     app.include_router(r, prefix="/api/v1")
+
+
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """直接打開 API 網址時，導向前端網站（API 文件在 /api/v1/docs）。"""
+    return RedirectResponse(settings.web_url, status_code=307)

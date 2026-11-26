@@ -52,12 +52,43 @@ def sniff(data: bytes, filename: str) -> str | None:
 
 def store(user_id: str, data: bytes) -> tuple[str, str]:
     h = hashlib.sha256(data).hexdigest()
+    if get_settings().storage_backend == "db":
+        from sqlalchemy import text as sql
+
+        from ..core.db import service_session
+        rel = f"{user_id}/{h}"
+        with service_session() as conn:
+            conn.execute(sql("insert into stored_files (path, data) values (:p, :d) on conflict (path) do nothing"),
+                         {"p": rel, "d": data})
+        return rel, h
     d = get_settings().storage_dir / user_id
     d.mkdir(parents=True, exist_ok=True)
     p = d / h
     if not p.exists():
         p.write_bytes(data)
     return str(p.relative_to(get_settings().storage_dir)), h
+
+
+def read_file(rel: str) -> bytes:
+    if get_settings().storage_backend == "db":
+        from ..core.db import one, service_session
+        with service_session() as conn:
+            r = one(conn, "select data from stored_files where path = :p", p=rel)
+        if r is None:
+            raise FileNotFoundError(rel)
+        return bytes(r["data"])
+    return storage_path(rel).read_bytes()
+
+
+def delete_file(rel: str) -> None:
+    if get_settings().storage_backend == "db":
+        from sqlalchemy import text as sql
+
+        from ..core.db import service_session
+        with service_session() as conn:
+            conn.execute(sql("delete from stored_files where path = :p"), {"p": rel})
+        return
+    storage_path(rel).unlink(missing_ok=True)
 
 
 def storage_path(rel: str) -> Path:
