@@ -602,6 +602,8 @@ def delete_contract(cid: str, user: CurrentUser, request: Request) -> Response:
 
 @router.post("/contracts/demo", tags=["contracts"], status_code=201)
 def add_demo_contract(user: CurrentUser, background: BackgroundTasks) -> dict:
+    if get_settings().hide_demo_content:  # 真實帳號只保存自己上傳的契約
+        raise ApiError(404, "not_found", "示範契約只在示範模式提供")
     from ..services.demo_data import demo_contract_pdf
     data = demo_contract_pdf()
     rel, h = contracts.store(user.id, data)
@@ -736,12 +738,13 @@ def set_subs(body: SubscriptionIn, user: CurrentUser) -> dict:
 
 @router.get("/dashboard", tags=["dashboard"])
 def dashboard(user: CurrentUser) -> dict:
+    no_demo = "and not is_demo" if get_settings().hide_demo_content else ""
     with user_session(user.claims) as conn:
-        k = one(conn, """select
+        k = one(conn, f"""select
             (select count(*) from simulation_scenarios where status <> 'archived')::int as scenarios,
             (select count(*) from contracts where user_id = auth.uid() and status = 'analyzed')::int as contracts,
             (select count(*) from reports)::int as reports,
-            (select count(*) from regulatory_updates where detected_at > now() - interval '90 days')::int as reg_updates,
+            (select count(*) from regulatory_updates where detected_at > now() - interval '90 days' {no_demo})::int as reg_updates,
             (select count(*) from notifications where read_at is null)::int as unread""")
         recent = rows(conn, """select id::text, scenario_name, scenario_type, status, rule_version_label, is_demo,
                                  created_at::text from simulation_scenarios where status <> 'archived'
@@ -757,8 +760,8 @@ def dashboard(user: CurrentUser) -> dict:
             select e.event_status, count(*)::int as n from legal_events e
             join simulation_results r on r.id = e.simulation_result_id join simulation_scenarios s on s.id = r.scenario_id
             where {latest} group by e.event_status""")}
-        updates = rows(conn, """select id::text, title, authority, review_status, is_demo, effective_date::text, detected_at::text
-                                from regulatory_updates order by detected_at desc limit 5""")
+        updates = rows(conn, f"""select id::text, title, authority, review_status, is_demo, effective_date::text, detected_at::text
+                                from regulatory_updates where true {no_demo} order by detected_at desc limit 5""")
         accs = [r["id"] for r in rows(conn, "select id::text from virtual_accounts order by created_at limit 1")]
         account = _account_state(conn, accs[0]) if accs else None
         runs = rows(conn, "select status, count(*)::int as n from agent_runs group by status")

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from ..core.audit import audit
-from ..core.config import ROOT
+from ..core.config import ROOT, get_settings
 from ..core.db import one, rows, service_session, user_session
 from ..core.errors import ApiError
 from ..financial_engine.rounding import D
@@ -31,10 +31,11 @@ Admin = Depends(require_role("system_admin"))
 # ───── 法規變動（公開讀取） ─────
 @router.get("/regulatory/updates", tags=["regulatory"])
 def updates() -> dict:
+    no_demo = "where not is_demo" if get_settings().hide_demo_content else ""
     with user_session(None) as conn:
-        items = rows(conn, """select id::text, title, authority, official_url, change_summary, affected_trading_types,
+        items = rows(conn, f"""select id::text, title, authority, official_url, change_summary, affected_trading_types,
                                 is_demo, review_status, publication_date::text, effective_date::text, detected_at::text
-                              from regulatory_updates order by detected_at desc""")
+                              from regulatory_updates {no_demo} order by detected_at desc""")
     return {"items": items}
 
 
@@ -45,7 +46,7 @@ def update_detail(uid: str) -> dict:
                            affected_trading_types, impact_analysis, is_demo, review_status, publication_date::text,
                            effective_date::text, detected_at::text, draft_rule_version_id::text
                          from regulatory_updates where id::text = :i""", i=uid)
-    if u is None:
+    if u is None or (u["is_demo"] and get_settings().hide_demo_content):
         raise ApiError(404, "not_found", "找不到法規更新")
     return json.loads(json.dumps(u, default=str))
 

@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, FileSearch, FileText, FlaskConical, Radar, RefreshCw, Scale, TrendingDown, LifeBuoy } from "lucide-react";
+import { ArrowUpRight, BookOpenText, ChevronDown, CircleHelp, FileSearch, FileText, FlaskConical, Radar, Scale, TrendingDown, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { useL } from "@/lib/i18n";
-import { useRuleVersion } from "@/components/shell/AppShell";
-import { Badge, Card, EmptyState, ErrorState, EventStatus, LoadingBlock, SimBadge } from "@/components/ui";
+import { Badge, Card, EmptyState, ErrorState, EventStatus, LoadingBlock } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn, fmtDate, fmtMoney, fmtNum } from "@/lib/format";
 import { useAuth, useHydrated } from "@/stores/auth";
@@ -26,13 +25,12 @@ export function Dashboard() {
   const locale = useLocale();
   const token = useAuth((s) => s.token);
   const hydrated = useHydrated();
-  const rv = useRuleVersion().data;
   const q = useQuery({ queryKey: ["dashboard", token], queryFn: () => api<Dash>("/dashboard"), enabled: !!token });
   const [expand, setExpand] = useState(false);
   const d = q.data;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* 標題列：參考版面（左標題、右側更新時間／規則版本／匯出） */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -40,13 +38,6 @@ export function Dashboard() {
           <p className="text-[14px] text-ink-2">{t("dashboard.subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => q.refetch()} className="flex h-11 items-center gap-3 rounded-full border border-line bg-surface pl-4 pr-1.5 text-[14px] text-ink shadow-card">
-            {t("dashboard.updated")} {hydrated && q.dataUpdatedAt ? new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Taipei" }).format(q.dataUpdatedAt) : "—"}
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-bg"><RefreshCw size={14} className={q.isFetching ? "animate-spin" : ""} aria-hidden /></span>
-          </button>
-          <span className="flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-[14px] text-ink shadow-card">
-            {t("common.ruleVersion")} <span className="num font-medium">{hydrated ? (rv?.rule_version ?? "—") : "—"}</span>
-          </span>
           <Link href="/reports" className="flex h-11 items-center gap-3 rounded-full bg-ink pl-5 pr-1.5 text-[14px] font-medium text-bg">
             {t("common.export")}
             <span className="grid h-8 w-8 place-items-center rounded-full bg-bg text-ink"><ArrowUpRight size={15} aria-hidden /></span>
@@ -59,22 +50,27 @@ export function Dashboard() {
       ) : q.isLoading ? <Card><LoadingBlock rows={6} /></Card> : q.error ? <Card><ErrorState error={q.error} onRetry={() => q.refetch()} /></Card> : d ? (
         <>
           {/* KPI 四卡：第一張為主卡 */}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard hero label={t("dashboard.kpiPending")} value={String(d.kpis.pending_legal_items)} sub={t("timeline.status.requires_confirmation")} icon={<CircleHelp size={18} />} href="/legal/rights" />
             <KpiCard label={t("dashboard.kpiScenarios")} value={String(d.kpis.scenarios)} sub={t("common.simulation")} icon={<FlaskConical size={18} />} tone="bg-high" valueTone="text-high" href="/scenarios" />
             <KpiCard label={t("dashboard.kpiContracts")} value={String(d.kpis.contracts)} sub={t("nav.contracts")} icon={<FileSearch size={18} />} tone="bg-blue" valueTone="text-blue" href="/contracts" />
             <KpiCard label={t("dashboard.kpiUpdates")} value={String(d.kpis.reg_updates)} sub={`${t("dashboard.kpiReports")} ${d.kpis.reports}`} icon={<Radar size={18} />} tone="bg-normal" valueTone="text-normal" href="/regulatory-monitor" />
           </div>
 
-          {/* 次要指標：模擬帳戶 */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <MiniStat icon={<TrendingDown size={22} />} label={t("dashboard.accountValue")} value={d.account ? fmtMoney(d.account.financial_state.market_value, locale) : "—"} badge />
-            <MiniStat icon={<Scale size={22} />} label={t("dashboard.accountBorrowed")} value={d.account ? fmtMoney(d.account.financial_state.borrowed, locale) : "—"} badge />
-            <MiniStat icon={<CircleHelp size={22} />} label={t("dashboard.accountRatio")} value={d.account?.financial_state.account_ratio ? `${fmtNum(d.account.financial_state.account_ratio.account_maintenance_ratio.value, locale, 2)}%` : "—"} badge />
-          </div>
+          {/* 次要指標：模擬帳戶（帳號沒有建立模擬帳戶時整列不顯示）；「模擬資料」只說明一次 */}
+          {d.account ? (
+            <div>
+              <p className="mb-2 text-[13px] text-ink-3">{L("以下為你的模擬帳戶數字，不是真實帳戶。", "Figures below are from your simulated account, not a real one.")}</p>
+              <div className="grid gap-5 md:grid-cols-3">
+                <MiniStat icon={<TrendingDown size={22} />} label={t("dashboard.accountValue")} value={fmtMoney(d.account.financial_state.market_value, locale)} />
+                <MiniStat icon={<Scale size={22} />} label={t("dashboard.accountBorrowed")} value={fmtMoney(d.account.financial_state.borrowed, locale)} />
+                <MiniStat icon={<CircleHelp size={22} />} label={t("dashboard.accountRatio")} value={d.account.financial_state.account_ratio ? `${fmtNum(d.account.financial_state.account_ratio.account_maintenance_ratio.value, locale, 2)}%` : "—"} />
+              </div>
+            </div>
+          ) : null}
 
           {/* 主內容兩欄 */}
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <Card className="p-5">
               <h2 className="text-[18px] font-semibold text-ink">{t("dashboard.riskOverview")}</h2>
               <p className="text-[13px] text-ink-3">{t("dashboard.riskOverviewDesc")}</p>
@@ -86,7 +82,7 @@ export function Dashboard() {
                   <h2 className="text-[18px] font-semibold text-ink">{t("dashboard.regUpdates")}</h2>
                   <p className="text-[13px] text-ink-3">{t("regulatory.subtitle").slice(0, 26)}…</p>
                 </div>
-                <Badge tone="blue">{d.regulatory_updates.length} total</Badge>
+                <Badge tone="blue">{d.regulatory_updates.length}</Badge>
               </div>
               <ul className="mt-4 space-y-3">
                 {d.regulatory_updates.length === 0 ? <li className="text-[13px] text-ink-3">{t("regulatory.noUpdates")}</li> : d.regulatory_updates.map((u) => (
@@ -114,13 +110,12 @@ export function Dashboard() {
               {t("common.details")} <ChevronDown size={16} className={cn("transition-transform", expand && "rotate-180")} />
             </button>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3">
             {(expand ? d.recent_simulations : d.recent_simulations.slice(0, 3)).map((s) => (
               <Link key={s.id} href={`/scenarios/${s.id}`} className="rounded-[12px] border border-line bg-surface p-5 shadow-card hover:border-brand">
                 <p className="text-[13px] text-ink-3">{s.scenario_type === "day_trading" ? t("nav.dayTrading") : t("nav.margin")}</p>
                 <p className="mt-1 line-clamp-2 text-[16px] font-semibold text-ink">{s.scenario_name}</p>
-                <p className="num mt-2 text-[12px] text-ink-3">{fmtDate(s.created_at, locale, true)} · {s.rule_version_label ?? "—"}</p>
-                <div className="mt-2 flex gap-1.5">{s.is_demo ? <Badge tone="warning">{t("common.demo")}</Badge> : null}<SimBadge /></div>
+                <p className="num mt-2 text-[12px] text-ink-3">{fmtDate(s.created_at, locale, true)}</p>
               </Link>
             ))}
             {d.recent_simulations.length === 0 ? <Card className="md:col-span-3"><EmptyState title={t("common.empty")} /></Card> : null}
@@ -164,12 +159,12 @@ function KpiCard({ label, value, sub, icon, hero, tone, valueTone, href }: { lab
   );
 }
 
-function MiniStat({ icon, label, value, badge }: { icon: ReactNode; label: string; value: string; badge?: boolean }) {
+function MiniStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-4 rounded-[16px] border border-line bg-surface p-5 shadow-card">
       <span className="grid h-12 w-12 place-items-center rounded-full bg-surface-muted text-ink-2">{icon}</span>
       <div className="min-w-0">
-        <p className="flex items-center gap-2 text-[13px] text-ink-3">{label}{badge ? <SimBadge /> : null}</p>
+        <p className="text-[13px] text-ink-3">{label}</p>
         <p className="num text-[26px] font-bold text-ink">{value}</p>
       </div>
     </div>
@@ -189,7 +184,15 @@ function RiskBars({ items }: { items: Dash["risk_overview"] }) {
     { key: "requires_confirmation", label: t("timeline.status.requires_confirmation"), value: counts.requires_confirmation, color: "var(--chart-1)" },
     { key: "scenarios", label: t("dashboard.kpiScenarios"), value: counts.scenarios, color: "var(--chart-3)" },
   ];
-  const list = items.filter((i) => i.event_type !== "price_change").slice(0, 5);
+  // 同一情境、同一狀態的事件合併成一列（原本同名情境會連續出現好幾列）
+  const grouped = new Map<string, { item: Dash["risk_overview"][number]; n: number }>();
+  for (const i of items.filter((x) => x.event_type !== "price_change")) {
+    const k = `${i.scenario_id}|${i.event_status}`;
+    const g = grouped.get(k);
+    if (g) g.n += 1;
+    else grouped.set(k, { item: i, n: 1 });
+  }
+  const list = [...grouped.values()].slice(0, 4);
   return (
     <div className="mt-4 grid gap-6 md:grid-cols-[220px_1fr]">
       <div className="flex h-48 items-end gap-4" role="img" aria-label={bars.map((b) => `${b.label} ${b.value}`).join("，")}>
@@ -209,10 +212,11 @@ function RiskBars({ items }: { items: Dash["risk_overview"] }) {
         ))}
         <li className="border-t border-line pt-2">
           <ul className="space-y-1.5">
-            {list.map((i, n) => (
-              <li key={n} className="flex items-center gap-2 text-[13px]">
+            {list.map(({ item: i, n }) => (
+              <li key={`${i.scenario_id}-${i.event_status}`} className="flex items-center gap-2 text-[13px]">
                 <EventStatus status={i.event_status} />
-                <Link href={`/scenarios/${i.scenario_id}`} className="truncate text-ink-2 hover:text-ink">{i.scenario_name}</Link>
+                <Link href={`/scenarios/${i.scenario_id}`} className="min-w-0 flex-1 truncate text-ink-2 hover:text-ink">{i.scenario_name}</Link>
+                {n > 1 ? <span className="num shrink-0 text-ink-3">×{n}</span> : null}
               </li>
             ))}
           </ul>

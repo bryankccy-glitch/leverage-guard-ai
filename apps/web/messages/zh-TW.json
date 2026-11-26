@@ -211,7 +211,7 @@
     "accountEquity": "模擬自有資金",
     "accountPnl": "模擬未實現損益",
     "accountRatio": "模擬整戶維持率",
-    "loginPrompt": "登入示範帳號後，可以儲存情境、分析契約並產生報告。",
+    "loginPrompt": "登入後，可以儲存情境、分析契約並產生報告。",
     "guestTitle": "你目前以訪客身分使用"
   },
   "sim": {

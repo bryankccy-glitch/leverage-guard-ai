@@ -64,7 +64,6 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const toggle = useUI((s) => s.toggleSidebar);
   const user = useAuth((s) => s.user);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const counts = useCounts().data?.kpis;
   const health = useHealth();
 
   // 換頁時關閉抽屜（render 期間依 pathname 調整狀態，不用 effect）
@@ -74,41 +73,28 @@ function AppShellInner({ children }: { children: ReactNode }) {
     setMobileOpen(false);
   }
 
+  // 選單只留兩組主要功能；報告、紀錄、通知、設定在右上角帳號選單（減少左側長度）
   const groups: { label: string; items: NavItem[] }[] = [
-    { label: t("nav.overview"), items: [{ href: "/dashboard", key: "nav.dashboard", icon: <LayoutGrid size={18} /> }] },
     {
       label: t("nav.simulation"),
       items: [
+        { href: "/dashboard", key: "nav.dashboard", icon: <LayoutGrid size={18} /> },
         { href: "/simulator/margin", key: "nav.margin", icon: <TrendingDown size={18} /> },
-        { href: "/scenarios", key: "nav.lab", icon: <FlaskConical size={18} />, badge: counts?.scenarios },
+        { href: "/scenarios", key: "nav.lab", icon: <FlaskConical size={18} /> },
       ],
     },
     {
       label: t("nav.legalIntel"),
       items: [
         { href: "/legal", key: "nav.legal", icon: <BookOpenText size={18} /> },
-        { href: "/legal/rights", key: "nav.rights", icon: <Scale size={18} />, badge: counts?.pending_legal_items || null },
+        { href: "/legal/rights", key: "nav.rights", icon: <Scale size={18} /> },
         { href: "/legal/timeline", key: "nav.timeline", icon: <Timer size={18} /> },
-        { href: "/contracts", key: "nav.contracts", icon: <FileSearch size={18} />, badge: counts?.contracts },
+        { href: "/contracts", key: "nav.contracts", icon: <FileSearch size={18} /> },
         { href: "/legal/disputes", key: "nav.disputes", icon: <LifeBuoy size={18} /> },
+        { href: "/regulatory-monitor", key: "nav.regulatory", icon: <Radar size={18} /> },
       ],
     },
-    {
-      label: t("nav.monitoring"),
-      items: [
-        { href: "/regulatory-monitor", key: "nav.regulatory", icon: <Radar size={18} />, badge: counts?.reg_updates },
-      ],
-    },
-    {
-      label: t("nav.personal"),
-      items: [
-        { href: "/reports", key: "nav.reports", icon: <FileText size={18} />, badge: counts?.reports },
-        { href: "/history", key: "nav.history", icon: <History size={18} /> },
-        { href: "/notifications", key: "nav.notifications", icon: <Bell size={18} />, badge: counts?.unread || null },
-        { href: "/settings", key: "nav.settings", icon: <Settings size={18} /> },
-        ...(user && user.role !== "investor" ? [{ href: "/admin", key: "nav.admin", icon: <ShieldCheck size={18} /> }] : []),
-      ],
-    },
+    ...(user && user.role !== "investor" ? [{ label: t("nav.admin"), items: [{ href: "/admin", key: "nav.admin", icon: <ShieldCheck size={18} /> }] }] : []),
   ];
 
   const isActive = (href: string) =>
@@ -128,7 +114,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
           </button>
         )}
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto pr-0.5">
+      <div className="flex-1 space-y-6 overflow-y-auto pr-0.5">
         {groups.map((g) => (
           <div key={g.label}>
             {!collapsed || mobile ? <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-ink-3">{g.label}</p> : <div className="mx-2 mb-1 border-t border-line" />}
@@ -161,13 +147,12 @@ function AppShellInner({ children }: { children: ReactNode }) {
           </div>
         ))}
       </div>
-      <div className={cn("mt-3 flex items-center rounded-[12px] bg-surface-muted px-3 py-2.5 text-[13px]", collapsed && !mobile ? "justify-center px-0" : "justify-between")}>
-        {!collapsed || mobile ? <span className="text-ink-3">{t("nav.online")}</span> : null}
-        <span className="flex items-center gap-2 text-ink">
-          {!collapsed || mobile ? (health.isSuccess ? t("shell.apiOnline") : t("shell.apiOffline")) : null}
-          <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", health.isSuccess ? "bg-blue" : "bg-critical")} />
-        </span>
-      </div>
+      {health.isError ? (
+        <div className={cn("mt-3 flex items-center gap-2 rounded-[12px] bg-critical-soft px-3 py-2.5 text-[13px] text-critical", collapsed && !mobile && "justify-center px-0")}>
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-critical" />
+          {!collapsed || mobile ? t("shell.apiOffline") : null}
+        </div>
+      ) : null}
     </nav>
   );
 
@@ -183,7 +168,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         ) : null}
         <div className="min-w-0 flex-1">
           <TopBar onMenu={() => setMobileOpen(true)} />
-          <main id="main" className="px-4 pb-24 pt-5 md:px-2 md:pb-10">
+          <main id="main" className="px-4 pb-24 pt-6 md:px-4 md:pb-12">
             <Breadcrumb />
             {children}
           </main>
@@ -202,6 +187,8 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   const setLocale = useUI((s) => s.setLocale);
   const { user } = useAuth();
   const rv = useRuleVersion().data;
+  const unread = useCounts().data?.kpis.unread ?? 0;
+  const staff = !!user && user.role !== "investor"; // 規則版本是審查資訊，只給審查員與管理員看
   const [q, setQ] = useState("");
   const mounted = useMounted();
   const unreviewed = rv?.rules.filter((r) => r.review_status !== "active" && r.review_status !== "approved").length ?? 0;
@@ -226,14 +213,17 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           <input id="global-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("shell.searchPlaceholder")} className="h-10 min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-3" />
         </form>
         <div className="ml-auto flex items-center gap-1.5 md:gap-2">
-          <Link href="/admin/rule-versions" className="hidden items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-3 text-[13px] text-ink hover:bg-surface-muted lg:flex" title={t("common.ruleVersion")}>
+          {mounted && staff ? <Link href="/admin/rule-versions" className="hidden items-center gap-2 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-3 text-[13px] text-ink hover:bg-surface-muted lg:flex" title={t("common.ruleVersion")}>
             <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-bg"><Activity size={14} aria-hidden /></span>
             <span className="flex flex-col leading-tight">
               <span className="text-[11px] text-ink-3">{t("shell.ruleVersionLabel")}{mounted && unreviewed ? ` · ${t("common.unreviewed")}` : mounted && aiChecked ? ` · ${t("common.aiChecked")}` : ""}</span>
               <span className="num font-medium">{mounted ? (rv?.rule_version ?? "—") : "—"}</span>
             </span>
-          </Link>
-          <IconButton label={t("nav.notifications")} onClick={() => router.push("/notifications")}><Bell size={18} /></IconButton>
+          </Link> : null}
+          <span className="relative">
+            <IconButton label={unread ? `${t("nav.notifications")} (${unread})` : t("nav.notifications")} onClick={() => router.push("/notifications")}><Bell size={18} /></IconButton>
+            {mounted && unread ? <span aria-hidden className="num absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-critical px-1 text-[10px] font-semibold text-white">{unread > 9 ? "9+" : unread}</span> : null}
+          </span>
           <IconButton label={t("shell.theme")} onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
             {mounted && resolvedTheme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
@@ -252,8 +242,17 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content align="end" sideOffset={6} className="z-50 min-w-44 rounded-[12px] border border-line bg-surface p-1 shadow-card">
+                  <DropdownMenu.Item className="cursor-pointer rounded-[8px] px-3 py-2 text-[14px] text-ink outline-none data-[highlighted]:bg-surface-muted" onSelect={() => router.push("/reports")}>
+                    <span className="flex items-center gap-2"><FileText size={14} />{t("nav.reports")}</span>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item className="cursor-pointer rounded-[8px] px-3 py-2 text-[14px] text-ink outline-none data-[highlighted]:bg-surface-muted" onSelect={() => router.push("/history")}>
+                    <span className="flex items-center gap-2"><History size={14} />{t("nav.history")}</span>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item className="cursor-pointer rounded-[8px] px-3 py-2 text-[14px] text-ink outline-none data-[highlighted]:bg-surface-muted" onSelect={() => router.push("/notifications")}>
+                    <span className="flex items-center gap-2"><Bell size={14} />{t("nav.notifications")}</span>
+                  </DropdownMenu.Item>
                   <DropdownMenu.Item className="cursor-pointer rounded-[8px] px-3 py-2 text-[14px] text-ink outline-none data-[highlighted]:bg-surface-muted" onSelect={() => router.push("/settings")}>
-                    {t("nav.settings")}
+                    <span className="flex items-center gap-2"><Settings size={14} />{t("nav.settings")}</span>
                   </DropdownMenu.Item>
                   {user.role !== "investor" ? (
                     <DropdownMenu.Item className="cursor-pointer rounded-[8px] px-3 py-2 text-[14px] text-ink outline-none data-[highlighted]:bg-surface-muted" onSelect={() => router.push("/admin")}>

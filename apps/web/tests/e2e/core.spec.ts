@@ -14,9 +14,14 @@ test("融資模擬：拖動滑桿後維持率與補繳差額同步更新，並�
   await page.goto("/simulator/margin");
   await page.getByRole("button", { name: "−30%（70）" }).click();
   await expect(page.getByText("116.67%").first()).toBeVisible();
-  await expect(page.getByText("後端正式計算")).toBeVisible({ timeout: 15000 });
+  // 技術資訊收進「計算假設」：等後端驗證完成，再展開確認有後端正式計算
+  await expect(page.getByText("等待後端驗證…")).toHaveCount(0, { timeout: 15000 });
+  await page.getByRole("button", { name: "展開", exact: true }).last().click();
+  await expect(page.getByText(/後端正式計算/)).toBeVisible();
   await expect(page.getByText("整戶擔保維持率追繳門檻").first()).toBeVisible();
   await expect(page.getByText("引用已比對官方原文").first()).toBeVisible();
+  // 詳細計算結果預設收合（評審回饋）：先展開再點數字看公式
+  await page.getByRole("button", { name: "展開", exact: true }).first().click();
   await page.getByRole("button", { name: /估計補繳差額/ }).click();
   await expect(page.getByText(/融資借款 −（價格 × 股數 × 融資比率）/)).toBeVisible();
 });

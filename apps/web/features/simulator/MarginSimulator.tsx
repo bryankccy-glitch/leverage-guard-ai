@@ -2,7 +2,7 @@
 
 import * as Slider from "@radix-ui/react-slider";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, ChevronDown, Info, RotateCcw, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, ChevronDown, Info, RotateCcw, Save, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
@@ -62,6 +62,7 @@ export function MarginSimulator() {
   const t = useTranslations();
   const locale = useLocale();
   const L = useL();
+  const colorNote = L("價格顏色採台股慣例：紅漲綠跌（只代表價格方向，不代表風險）", "Price colours follow the Taiwan convention: red = up, green = down (direction only, not risk).");
   const isEn = locale === "en";
   // 長區塊預設收合，畫面只留核心數字、圖表與 Copilot
   const [open, setOpen] = useState({ metrics: false, assumptions: false, rules: false });
@@ -136,20 +137,23 @@ export function MarginSimulator() {
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_380px]">
+      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_380px]">
         {/* 左欄：參數 */}
         <Card className="xl:sticky xl:top-24 xl:self-start">
           <CardHeader title={t("sim.controls")} action={<SimBadge />} />
-          <div className="space-y-4 p-5">
+          <div className="space-y-5 p-5">
             <Field label={t("sim.asset")} htmlFor="asset"><Input id="asset" value={inp.asset_label} maxLength={60} onChange={(e) => set("asset_label")(e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
               <NumberField label={t("sim.buyPrice")} value={inp.buy_price} onChange={set("buy_price")} error={fieldErr("buy_price")} />
               <NumberField label={t("sim.quantity")} value={inp.quantity} onChange={set("quantity")} step="1" error={fieldErr("quantity")} suffix={t("common.shares")} />
             </div>
-            <NumberField label={t("sim.financingRatio")} value={inp.financing_ratio} onChange={set("financing_ratio")} step="0.01" error={fieldErr("financing_ratio")} hint={L("0.6 = 六成（依標的與券商規定）", "0.6 = 60% (depends on the security and your broker)")} />
+            <NumberField label={t("sim.financingRatio")} value={inp.financing_ratio} onChange={set("financing_ratio")} step="0.01" error={fieldErr("financing_ratio")} hint={L("0.6 = 六成（依標的與券商規定）", "0.6 = 60% (depends on the security and your broker)")} tip />
             <div className="space-y-2 rounded-[12px] bg-surface-muted p-3">
               <div className="flex items-baseline justify-between">
-                <label htmlFor="price-slider" className="text-[13px] font-medium text-ink-2">{t("sim.currentPrice")}</label>
+                <label htmlFor="price-slider" className="flex items-center gap-1 text-[13px] font-medium text-ink-2">
+                  {t("sim.currentPrice")}
+                  <span title={colorNote} className="inline-flex cursor-help text-ink-3"><Info size={13} aria-hidden /><span className="sr-only">（{colorNote}）</span></span>
+                </label>
                 <span className={cn("num text-[20px] font-bold", curP < buy ? "text-down" : curP > buy ? "text-up" : "text-ink")}>{fmtNum(inp.current_price, locale, 2)}</span>
               </div>
               <Slider.Root id="price-slider" className="relative flex h-6 w-full touch-none select-none items-center" min={minP} max={maxP} step={0.5} value={[Math.min(Math.max(curP, minP), maxP)]} onValueChange={([v]) => set("current_price")(String(v))} aria-label={t("sim.currentPrice")}>
@@ -161,10 +165,9 @@ export function MarginSimulator() {
                   <button key={p.key} onClick={() => set("current_price")(String((buy * Number(p.price)) / 100))} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[12px] text-ink-2 hover:text-ink">{isEn ? p.labelEn : p.label}</button>
                 ))}
               </div>
-              <p className="text-[11px] text-ink-3">{L("價格顏色採台股慣例：紅漲綠跌（只代表價格方向，不代表風險）", "Price colours follow the Taiwan convention: red = up, green = down (direction only, not risk).")}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <NumberField label={t("sim.interestRate")} value={inp.annual_interest_rate} onChange={set("annual_interest_rate")} step="0.0001" hint="0.0645 = 6.45%" error={fieldErr("annual_interest_rate")} />
+              <NumberField label={t("sim.interestRate")} value={inp.annual_interest_rate} onChange={set("annual_interest_rate")} step="0.0001" hint="0.0645 = 6.45%" tip error={fieldErr("annual_interest_rate")} />
               <NumberField label={t("sim.holdingDays")} value={inp.holding_days} onChange={set("holding_days")} step="1" suffix={t("common.days")} />
             </div>
             <details className="rounded-[8px] border border-line px-3 py-2">
@@ -175,7 +178,7 @@ export function MarginSimulator() {
                   <NumberField label={t("sim.feeDiscount")} value={inp.fee_discount} onChange={set("fee_discount")} step="0.01" />
                   <NumberField label={t("sim.minFee")} value={inp.min_fee} onChange={set("min_fee")} step="1" />
                 </div>
-                <NumberField label={t("sim.otherCollateral")} value={inp.other_collateral_value} onChange={set("other_collateral_value")} hint={L("抵繳品需先依規定折算（例如上市股票按基準價七折）", "Substitute collateral must be discounted per the rules first (e.g. listed stocks at 70% of the reference price).")} />
+                <NumberField label={t("sim.otherCollateral")} value={inp.other_collateral_value} onChange={set("other_collateral_value")} hint={L("抵繳品需先依規定折算（例如上市股票按基準價七折）", "Substitute collateral must be discounted per the rules first (e.g. listed stocks at 70% of the reference price).")} tip />
                 <Field label={t("sim.asOf")} htmlFor="asof"><Input id="asof" type="date" value={inp.as_of} onChange={(e) => set("as_of")(e.target.value)} /></Field>
               </div>
             </details>
@@ -194,17 +197,15 @@ export function MarginSimulator() {
 
         {/* 中欄：財務視覺化 */}
         <div className="min-w-0 space-y-5">
-          <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 2xl:grid-cols-4">
             <Kpi hero label={t("metrics.maintenance_ratio")} value={preview?.ratioPct ? `${fmtNum(preview.ratioPct, locale, 2)}%` : "—"} sub={preview?.belowThreshold ? L(`低於 ${Number(thresholdParam) * 100}% 門檻`, `Below ${Number(thresholdParam) * 100}% threshold`) : L(`門檻 ${Number(thresholdParam) * 100}%`, `Threshold ${Number(thresholdParam) * 100}%`)} warn={preview?.belowThreshold} />
             <Kpi label={t("metrics.gross_pnl")} value={preview ? fmtMoney(preview.grossPnl, locale) : "—"} negative={preview?.grossPnl.startsWith("-")} />
             <Kpi label={t("metrics.threshold_price")} value={preview?.thresholdPrice ? fmtNum(preview.thresholdPrice, locale, 2) : "—"} sub={t("common.simplified")} />
             <Kpi label={t("metrics.margin_call_amount")} value={preview ? fmtMoney(preview.callAmount, locale) : "—"} sub={L("依第 54 條公式", "Per Art. 54 formula")} />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[12px]" aria-live="polite">
-            <Badge tone="blue">{t("sim.previewCalc")}{isEn ? ": " : "："}Decimal.js</Badge>
-            {stale ? <Badge tone="unknown">{t("sim.calcPending")}</Badge> : data ? <Badge tone="normal" icon={<CheckCircle2 size={12} aria-hidden />}>{t("sim.officialCalc")} {data.calculation_version}</Badge> : null}
+            {stale ? <Badge tone="unknown">{t("sim.calcPending")}</Badge> : null}
             {mismatch ? <Badge tone="warning">{t("sim.calcMismatch")}</Badge> : null}
-            {data ? <span className="num text-ink-3">{t("common.ruleVersion")} {data.rule_version}</span> : null}
           </div>
           <Card>
             <CardHeader title={t("sim.visual")} desc={t("sim.thresholdNote")} />
@@ -229,6 +230,11 @@ export function MarginSimulator() {
               {open.assumptions || data.warnings.length ? (
                 <ul id="sim-assumptions" className="list-disc space-y-1 px-10 pb-5 pt-2 text-[13px] text-ink-2">
                   {open.assumptions ? data.assumptions.map((a, i) => <li key={i}>{a}</li>) : null}
+                  {open.assumptions ? (
+                    <li className="num text-ink-3">
+                      {t("sim.previewCalc")}{isEn ? ": " : "："}Decimal.js · {t("sim.officialCalc")} {data.calculation_version} · {t("common.ruleVersion")} {data.rule_version}
+                    </li>
+                  ) : null}
                   {data.warnings.map((w) => <li key={w.code} className="text-warning">{w.message}</li>)}
                 </ul>
               ) : <div className="pb-5" />}

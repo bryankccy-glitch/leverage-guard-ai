@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     # 帳號登入：使用者輸入帳號（例如 bryan），對應 Supabase Auth 的 bryan@<login_domain>
     login_domain: str = "leverageguard.local"
 
+    @property
+    def hide_demo_content(self) -> bool:
+        """真實帳號模式（supabase）不顯示全站示範內容（虛構法規更新、示範契約），帳號只看到自己的紀錄。"""
+        return self.auth_mode == "supabase"
+
     # AI：ollama（千問，本機）、gemini（需要金鑰）、none（只用規則與模板）
     llm_provider: str = "ollama"
     llm_model: str = "qwen3:8b"

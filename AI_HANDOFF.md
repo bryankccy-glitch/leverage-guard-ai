@@ -113,3 +113,19 @@ cd apps/api && .venv/bin/python -m pytest -q
 - NOT RUN：真的帳號登入（密碼只有使用者知道）。
 - 待辦：Supabase Auth「Allow new users to sign up」仍開啟（建議關閉）；管理員帳號建立後要把 profiles.role 改為 system_admin（使用者先登入一次讓 profile 建立）。
 - 回復：Vercel 兩個專案 Promote 上一版；或把 AUTH_MODE 改回 local 後重新部署 API。
+
+## 帳號資料隔離＋版面精簡（2026-11-26 晚，Claude；尚未 commit、尚未部署）
+
+**資料隔離**（使用者要求：帳號登入後不出現模擬／示範資料，只看到自己的紀錄）
+- 個人資料表原本就由 RLS 隔離（user_id = auth.uid()），新帳號不會被自動建立示範資料。
+- 新增 `Settings.hide_demo_content`（auth_mode=supabase 時為真）：儀表板與 `/regulatory/updates` 排除 is_demo 的全站示範法規更新（詳情 404；管理員審查頁仍可見）；`POST /contracts/demo` 回 404；前端契約頁隱藏示範契約區塊。
+- 測試 `tests/test_demo_isolation.py`（4 項）：新帳號儀表板全為 0、無示範內容；示範模式仍顯示示範更新。
+
+**版面 A–E**（使用者選全部）
+- A：規則版本只給審查員／管理員（頂部列）；儀表板移除更新時間與規則版本按鈕；融資頁技術徽章（Decimal.js、fin-engine、規則版本）移到展開的「計算假設」。
+- B：左側選單 5 組 14 項 → 2 組 9 項（模擬、法律知識；管理員多一組）；報告、紀錄、通知、設定移到帳號選單；未讀數字改在鈴鐺；API 狀態只在斷線時顯示。
+- C：儀表板風險事件同情境同狀態合併（×n）；「模擬資料」改為一行說明；沒有模擬帳戶時不顯示該列；移除英文殘留「total」。
+- D：Field/NumberField 新增 `tip`（說明收成 ⓘ、sr-only 保留）；融資頁換算說明與紅漲綠跌改用 ⓘ。
+- E：頁面間距加大（space-y-6、gap-5/6、main px-4）。
+- E2E：core.spec 融資測試配合收合調整（先展開計算結果；後端正式計算改在計算假設內檢查）。該測試自 12a19f3 起即會失敗（計算結果預設收合），本次一併修正。
+- 驗證：pytest 75 passed、Ruff PASS、tsc PASS、ESLint PASS、Playwright 10/10 passed、next build PASS（暫存複本）。

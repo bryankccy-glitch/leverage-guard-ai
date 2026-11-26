@@ -126,16 +126,26 @@ export function EventStatus({ status }: { status: string }) {
   );
 }
 
-export function Field({ label, hint, error, children, htmlFor }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode; htmlFor?: string }) {
+/** tip：說明收成標籤旁的 ⓘ（滑鼠移上去顯示；螢幕閱讀器照常讀到），讓密集的表單比較清爽。 */
+export function Field({ label, hint, error, children, htmlFor, tip }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode; htmlFor?: string; tip?: boolean }) {
+  const tipText = tip && typeof hint === "string" ? hint : null;
   return (
     <div className="space-y-1">
-      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-ink-2">{label}</label>
+      <label htmlFor={htmlFor} className="flex items-center gap-1 text-[13px] font-medium text-ink-2">
+        {label}
+        {tipText ? (
+          <span title={tipText} className="inline-flex cursor-help text-ink-3">
+            <Info size={13} aria-hidden />
+            <span className="sr-only">（{tipText}）</span>
+          </span>
+        ) : null}
+      </label>
       {children}
       {error ? (
         <p role="alert" className="flex items-center gap-1 text-[12px] text-critical">
           <XCircle size={12} aria-hidden /> {error}
         </p>
-      ) : hint ? (
+      ) : hint && !tipText ? (
         <p className="text-[12px] text-ink-3">{hint}</p>
       ) : null}
     </div>
@@ -165,10 +175,10 @@ export function Select({ className, children, ...p }: SelectHTMLAttributes<HTMLS
   );
 }
 
-export function NumberField({ label, value, onChange, suffix, error, hint, step = "any", min }: { label: ReactNode; value: string; onChange: (v: string) => void; suffix?: string; error?: string; hint?: ReactNode; step?: string; min?: string }) {
+export function NumberField({ label, value, onChange, suffix, error, hint, step = "any", min, tip }: { label: ReactNode; value: string; onChange: (v: string) => void; suffix?: string; error?: string; hint?: ReactNode; step?: string; min?: string; tip?: boolean }) {
   const id = useId();
   return (
-    <Field label={label} htmlFor={id} error={error} hint={hint}>
+    <Field label={label} htmlFor={id} error={error} hint={hint} tip={tip}>
       <div className="relative">
         <Input id={id} inputMode="decimal" type="number" step={step} min={min} value={value} invalid={!!error} onChange={(e) => onChange(e.target.value)} className={suffix ? "pr-12" : ""} />
         {suffix ? <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-ink-3">{suffix}</span> : null}

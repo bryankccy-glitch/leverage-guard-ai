@@ -211,7 +211,7 @@
     "accountEquity": "Simulated own equity",
     "accountPnl": "Simulated unrealized P&L",
     "accountRatio": "Simulated account ratio",
-    "loginPrompt": "Sign in with a demo account to save scenarios, analyze contracts and generate reports.",
+    "loginPrompt": "Sign in to save scenarios, analyze contracts and generate reports.",
     "guestTitle": "You are browsing as a guest"
   },
   "sim": {
