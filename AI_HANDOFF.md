@@ -8,7 +8,7 @@
 - 證交所休市日只公布最新年度（目前是 2027）；2026 年剩餘日期只排除週末，結果會標示 `weekends_only`。
 - 維持率門檻 130%、取消 166%、補繳期限 2 營業日、處分、溢額、剩餘債務、違約申報、違約金：都有證交所操作辦法第 53–55、81、82 條原文。
 - 當沖稅率 1.5‰ 至 2027-12-31（證交稅條例 2-2），之後回到 3‰（第 2 條）。
-- T+2 交割與「資金不足→違約交割」：**尚未匯入營業細則原文**，規則標為 is_demo、sources 空、時間軸標示 Insufficient Legal Evidence。
+- T+2 交割與「資金不足→違約交割」：~~尚未匯入營業細則原文~~ → **2026-11-26 已補完**（營業細則第 57、82、91 條，見後文「當沖法源補完」）。
 - Codex 額度用完，下午 2:20 恢復（實測錯誤訊息）。今晚全部由 Claude 實作。
 - 沒有 Gemini 金鑰；使用者指定改用千問（本機 Ollama `qwen3:8b`）。
 
@@ -170,3 +170,13 @@ cd apps/api && .venv/bin/python -m pytest -q
 - 部署後檢查 PASS：health 200；法規 9 份含營業細則；當沖試算使用 DT-SETTLEMENT-CYCLE／DT-FUNDING-GAP 1.0.0，引用第57、82、91條，無「待匯入」字樣；英文版無中文殘留（條文原文欄位除外）；未登入 /simulations 401；前端首頁與 /simulator/day-trading 200。
 - NOT RUN：瀏覽器實際點擊選單中的當沖入口（瀏覽器擴充未連線）；規則人工法律審查（兩條新版仍為 pending_review）。
 - 回復：Vercel 兩個專案 Promote 上一版；資料庫新增的文件與規則版本不影響舊版程式。
+
+## 安全強化：前端 CSP、跨實例限流、管理員權限（2026-11-27，Claude；使用者同意）
+
+- **限流**：`core/middleware.py` 改為 serverless 時用資料庫表 `api_rate_limits`（migration `20261127000001`）做分鐘視窗原子 upsert，多個 Vercel 實例共用；真實 IP 取 `x-forwarded-for` 第一段（只在 serverless 信任）；授權標頭只存 sha256 前 16 碼；資料庫錯誤時退回單機記憶體計數（不讓 API 停擺）；約 1% 請求順便清除 10 分鐘前的視窗；`/health`、`/ready` 不計數。新增 `tests/test_rate_limit.py`（5 項）。
+- **前端 CSP**：`apps/web/next.config.ts` 加 `headers()`：CSP（self＋API origin＋`*.supabase.co`；Next 水合需要 `'unsafe-inline'`；`frame-src` 只允許 API，用於契約 PDF；`frame-ancestors 'none'`；API 為 https 時才加 `upgrade-insecure-requests`）＋ nosniff、Referrer-Policy、X-Frame-Options、Permissions-Policy。
+- **正式資料庫（cxkcomcsnrcgkmdecsml）**：套用 `api_rate_limits` migration（RLS 開啟、revoke anon／authenticated）；`bryan@leverageguard.local` 的 `profiles.role` 由 investor 改為 system_admin（直接 SQL，未寫入應用層稽核紀錄）。
+- **驗證**：pytest 84 passed、Ruff PASS、評估集 金融 1.0／法律事件 1.0／引用 34/34；前端 tsc、next build PASS；本機正式模式（API 8811＋前端 3311）以示範「投資人」「系統管理員」各巡 45 頁：CSP 違規 0、頁面錯誤 0。
+- **資料保存期限**：只自動清除限流計數；使用者資料保留多久屬政策決定，未實作刪除。
+- 待辦：使用者資料保存期限政策；外部滲透測試；規則人工法律審查；Gemini／語意搜尋（需金鑰）。
+

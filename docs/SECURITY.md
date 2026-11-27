@@ -23,7 +23,7 @@
 ## 已知限制（未完成）
 
 - 本機模式使用示範帳號與後端簽發 JWT，**不可用於正式環境**；正式環境需 `AUTH_MODE=supabase`，並設定 Supabase Auth（Email、Google OAuth、密碼重設由 Supabase 提供，前端登入元件尚未接上）。
-- 限流是單機記憶體版；多台伺服器需改用 Redis。
-- Content Security Policy 只設在 API；前端 CSP 尚未設定。
-- 資料保存期限（retention）尚未自動執行。
+- 限流：serverless（正式站）用資料庫表 `api_rate_limits` 跨實例共用；本機用記憶體。（2026-11-27）
+- 前端 CSP 已設定於 `apps/web/next.config.ts`（因 Next.js 水合保留 script-src 'unsafe-inline'，未改用 nonce）。（2026-11-27）
+- 資料保存期限：限流計數自動清除；使用者資料保存政策尚未決定、未自動執行。
 - 尚未做外部滲透測試。
